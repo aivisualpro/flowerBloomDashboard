@@ -1,0 +1,39 @@
+// src/api/categories.js
+import axios from "axios";
+
+// Build base once (no shared api instance)
+import { API_BASE_URL as BASE } from '@/config';
+
+// ---- 1) LIST ----
+export async function getColorsLists() {
+  const res = await axios.get(`${BASE}/color/lists`);
+  return res.data;
+}
+
+// ---- 2) DETAIL ----
+export async function getColorsById(id) {
+  const res = await axios.get(`${BASE}/color/lists/${id}`);
+  return res.data?.data ?? res.data ?? {};
+}
+
+// ---- 3) CREATE ----
+export async function createColors(payload) {
+  const res = await axios.post(`${BASE}/color`, payload, {
+    headers: { "Content-Type": "application/json" },
+  });
+  return res.data;
+}
+
+// ---- 4) UPDATE ----
+export async function updateColors(id, payload) {
+  const res = await axios.put(`${BASE}/color/update/${id}`, payload, {
+    headers: { "Content-Type": "application/json" },
+  });
+  return res.data;
+}
+
+// ---- 5) DELETE ----
+export async function deleteColor(id) {
+  const res = await axios.delete(`${BASE}/color/delete/${id}`);
+  return res.data;
+}
