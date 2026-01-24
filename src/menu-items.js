@@ -28,7 +28,7 @@ const menuItems = {
       ]
     },
     {
-      id: 'ui-element',
+      id: 'customers-group',
       title: 'Customers',
       subtitle: 'UI Components',
       type: 'group',
@@ -45,7 +45,7 @@ const menuItems = {
       ]
     },
     {
-      id: 'ui-element',
+      id: 'products-group',
       title: 'Products',
       subtitle: 'UI Components',
       type: 'group',
@@ -70,7 +70,7 @@ const menuItems = {
       ]
     },
     {
-      id: 'ui-element',
+      id: 'orders-group',
       title: 'Orders',
       subtitle: 'UI Components',
       type: 'group',
@@ -87,7 +87,7 @@ const menuItems = {
       ]
     },
     {
-      id: 'ui-element',
+      id: 'categories-group',
       title: 'Categories',
       subtitle: 'UI Components',
       type: 'group',
@@ -120,7 +120,7 @@ const menuItems = {
       ]
     },
     {
-      id: 'ui-element',
+      id: 'brands-group',
       title: 'Brands',
       subtitle: 'UI Components',
       type: 'group',
@@ -137,7 +137,7 @@ const menuItems = {
       ]
     },
     {
-      id: 'ui-element',
+      id: 'occasions-group',
       title: 'Occasions',
       subtitle: 'UI Components',
       type: 'group',
@@ -154,7 +154,7 @@ const menuItems = {
       ]
     },
     {
-      id: 'ui-element',
+      id: 'recipients-group',
       title: 'Recipients',
       subtitle: 'UI Components',
       type: 'group',
@@ -171,7 +171,7 @@ const menuItems = {
       ]
     },
     {
-      id: 'ui-element',
+      id: 'packaging-group',
       title: 'Packaging',
       subtitle: 'UI Components',
       type: 'group',
@@ -222,7 +222,7 @@ const menuItems = {
     //   ]
     // },
     {
-      id: 'ui-element',
+      id: 'elements-group',
       title: 'Elements',
       subtitle: 'UI Components',
       type: 'group',

@@ -5,7 +5,9 @@
     "moduleResolution": "Node",
     "allowSyntheticDefaultImports": true,
     "allowJs": true,
-    "noEmit": true
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "./node_modules/.tmp/jsconfig.node"
   },
   "include": ["vite.config.mjs"]
 }

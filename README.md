@@ -74,13 +74,13 @@ git clone https://github.com/codedthemes/dashboardkit-free-admin-template.git
 3. Install packages
 
 ```
-yarn
+npm install
 ```
 
 4. Run project
 
 ```
-yarn start
+npm start
 ```
 
 ## Documentation

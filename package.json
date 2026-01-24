@@ -81,6 +81,6 @@
     "knip": "^5.30.6",
     "prettier": "^3.4.1",
     "sass": "1.77.6"
-  },
-  "packageManager": "yarn@4.6.0"
+  }
+
 }
