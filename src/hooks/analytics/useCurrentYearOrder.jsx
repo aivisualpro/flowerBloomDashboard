@@ -1,5 +1,6 @@
 // hooks/analytics/useCurrentYearOrder.js
 import { useEffect, useState } from "react";
+import { API_BASE_URL } from 'config';
 
 export default function useCurrentYearOrder() {
   const [orders, setOrders] = useState([]);
@@ -7,9 +8,7 @@ export default function useCurrentYearOrder() {
   useEffect(() => {
     let aborted = false;
 
-    const base =
-      (import.meta.env.VITE_BASE_URL || "").replace(/\/$/, ""); // remove trailing slash
-    const url = `https://crunchy-cookies-server.onrender.com/api/v1/analytics/current-year-order`;
+    const url = `${API_BASE_URL}/analytics/current-year-order`;
 
     const load = async () => {
       try {

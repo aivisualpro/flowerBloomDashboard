@@ -1,7 +1,7 @@
 // src/api/orders.js
 import axios from "axios";
 
-const BASE = import.meta.env.VITE_BASE_URL || "https://crunchy-cookies-server.onrender.com/api/v1";
+import { API_BASE_URL as BASE } from 'config';
 
 // ---- 1) LIST ----
 export async function getOrdersLists(params = {}) {

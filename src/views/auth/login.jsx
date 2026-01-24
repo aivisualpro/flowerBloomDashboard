@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Card, Row, Col, Button, Form, InputGroup, Alert, Spinner } from 'react-bootstrap';
 import FeatherIcon from 'feather-icons-react';
-
-const API_BASE = import.meta?.env?.VITE_API_URL || 'http://localhost:5000';
+import { API_BASE_URL } from 'config';
 
 export default function SignIn1() {
   const navigate = useNavigate();
@@ -22,7 +21,7 @@ export default function SignIn1() {
     }
     setLoading(true);
     try {
-      const res = await fetch(`https://crunchy-cookies-server.onrender.com/api/v1/auth/login`, {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // harmless; keeps future flexibility

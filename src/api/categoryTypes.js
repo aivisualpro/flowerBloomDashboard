@@ -2,7 +2,7 @@
 import axios from "axios";
 
 // Build base once (no shared api instance)
-const BASE = import.meta.env.VITE_BASE_URL || "https://crunchy-cookies-server.onrender.com/api/v1";
+import { API_BASE_URL as BASE } from 'config';
 
 // ---- 1) LIST ----
 export async function getCategoryTypesLists() {

@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
+import { API_BASE_URL } from 'config';
 
 export default function useCustomerReviews() {
   const [state, setState] = useState([]);
 
   useEffect(() => {
     let aborted = false;
-    const base = (import.meta.env.VITE_BASE_URL || "http://localhost:5000")
-      .replace(/\/$/, "");
-    const url = `https://crunchy-cookies-server.onrender.com/api/v1/analytics/customer-reviews`;
+    const url = `${API_BASE_URL}/analytics/customer-reviews`;
 
     (async () => {
       try {
