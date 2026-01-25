@@ -5,6 +5,7 @@ const SubCategorySchema = new mongoose.Schema({
   ar_name: { type: String },
   slug: { type: String, required: true, unique: true },
   category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' },
+  image: { type: String },
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 

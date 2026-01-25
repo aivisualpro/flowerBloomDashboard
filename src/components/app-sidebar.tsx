@@ -34,7 +34,18 @@ import {
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 
-const data = {
+interface NavItem {
+  title: string
+  url: string
+  icon: React.ElementType
+  isActive?: boolean
+  items?: {
+    title: string
+    url: string
+  }[]
+}
+
+const data: { navMain: NavItem[] } = {
   navMain: [
     {
       title: "Dashboard",
@@ -93,12 +104,9 @@ const data = {
       icon: Gift,
     },
     {
-      title: "Elements",
+      title: "Colors",
       url: "/colors",
       icon: Palette,
-      items: [
-          {title: "Colors", url: "/colors"}
-      ]
     },
   ],
 }

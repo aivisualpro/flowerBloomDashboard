@@ -19,7 +19,7 @@ export async function getSubCategoryById(id: string) {
 
 // ---- 3) CREATE ----
 export async function createSubCategory(payload: any) {
-  const res = await axios.post(`${BASE}/subCategory`, payload, {
+  const res = await axios.post(`${BASE}/subCategory/lists`, payload, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return res.data;

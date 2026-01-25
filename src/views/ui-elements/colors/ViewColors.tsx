@@ -1,393 +1,247 @@
-// src/pages/.../ViewColors.jsx
-import React from 'react';
-import { Row, Col } from 'react-bootstrap';
-import MainCard from '../../../components/Card/MainCard';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import PaletteIcon from '@mui/icons-material/Palette';
-import SearchIcon from '@mui/icons-material/Search';
-import SortIcon from '@mui/icons-material/Sort';
-import { useNavigate } from 'react-router-dom';
-import Button from '../../../components/Button';
-import { IoBag } from 'react-icons/io5';
+'use client';
+
+import * as React from 'react';
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button as MUIButton,
-  IconButton,
-  Tooltip,
-  Chip,
-  Skeleton,
-  Menu,
-  MenuItem,
-  Snackbar,
-  Alert
-} from '@mui/material';
+  Plus,
+  Search,
+  Filter,
+  Eye,
+  Edit,
+  Trash2,
+  CheckCircle,
+  XCircle,
+  MoreHorizontal,
+  Palette,
+  Droplets
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ParticleTextEffect } from "@/components/ParticleTextEffect";
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+} from "@/components/ui/card"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
 
 import { useColors } from '../../../hooks/colors/useColors';
 import { useDeleteColor } from '../../../hooks/colors/useColorMutation';
 
-/* ---------- helpers ---------- */
-function getContrastColor(hex: string) {
-  if (!hex || typeof hex !== 'string') return '#111';
-  const h = hex.replace('#', '');
-  const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
-  const bigint = parseInt(full, 16);
-  if (Number.isNaN(bigint)) return '#111';
-  const r = (bigint >> 16) & 255;
-  const g = (bigint >> 8) & 255;
-  const b = bigint & 255;
-  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-  return yiq >= 160 ? '#0f172a' : '#fff';
-}
-
-const softPill = (bg: string, fg: string, br: string) => ({
-  background: bg,
-  color: fg,
-  border: `1px solid ${br}`,
-  fontWeight: 700,
-  borderRadius: 999,
-  height: 24,
-  '& .MuiChip-label': { px: 1 }
-});
-
-/* ---------- Color Card component ---------- */
 interface Color {
-  id?: string;
-  _id?: string;
-  name?: string;
-  slug?: string;
-  value?: string;
-  mode?: string;
+  id: string;
+  name: string;
+  value: string;
+  mode: string;
+  isActive: boolean;
 }
 
-function ColorCard({ color, onEdit, onDelete, onCopied }: { color: Color; onEdit: () => void; onDelete: () => void; onCopied?: () => void; }) {
-  const bg = color.value || '#222';
-  const fg = getContrastColor(bg);
+export default function ColorsTable() {
+  const router = useRouter();
+  const [search, setSearch] = React.useState('');
+  const [status, setStatus] = React.useState('all');
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [colorToDelete, setColorToDelete] = React.useState<Color | null>(null);
 
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(bg);
-      onCopied?.();
-    } catch (e) {
-      // ignore
-    }
-  };
+  const { data: colors, isLoading } = useColors();
+  const delMutation = useDeleteColor();
 
-  return (
-    <div
-      className="color-card"
-      style={{
-        borderRadius: 16,
-        overflow: 'hidden',
-        border: '1px solid rgba(255,255,255,0.06)',
-        background: 'linear-gradient(180deg, rgba(2,6,23,0.5), rgba(2,6,23,0.2))',
-        boxShadow: '0 10px 30px rgba(0,0,0,0.25)'
-      }}
-    >
-      {/* Swatch */}
-      <div
-        style={{
-          height: 120,
-          background: bg,
-          position: 'relative',
-          display: 'flex',
-          alignItems: 'end',
-          justifyContent: 'space-between',
-          padding: 12
-        }}
-      >
-        <Chip
-          size="small"
-          icon={<PaletteIcon sx={{ color: fg }} />}
-          label={color.name || color.slug || 'Unnamed'}
-          sx={{
-            background: 'rgba(0,0,0,0.22)',
-            color: fg,
-            border: `1px solid rgba(255,255,255,0.25)`,
-            '& .MuiChip-icon': { color: fg },
-            fontWeight: 700
-          }}
-        />
-        <Chip
-          size="small"
-          label={bg}
-          sx={{
-            background: 'rgba(255,255,255,0.18)',
-            color: fg,
-            border: `1px solid rgba(255,255,255,0.35)`,
-            fontWeight: 700
-          }}
-        />
-      </div>
-
-      {/* Meta + actions */}
-      <div style={{ padding: 14, display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'center', gap: 8 }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ color: '#e5e7eb', fontWeight: 700, fontSize: 16, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {color.name || color.slug || color.value}
-          </div>
-          {(color.slug || color.mode) && (
-            <div style={{ color: '#a3a3a3', fontSize: 12 }}>
-              {color.slug && <span>/{color.slug}</span>} {color.slug && color.mode ? ' • ' : ''} {color.mode && <span>{color.mode}</span>}
-            </div>
-          )}
-        </div>
-
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <Tooltip title="Copy color">
-            <IconButton size="small" onClick={copy}>
-              <ContentCopyIcon fontSize="small" sx={{ color: '#d1d5db' }} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Edit">
-            <IconButton size="small" onClick={onEdit}>
-              <EditIcon fontSize="small" sx={{ color: '#d1d5db' }} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Delete">
-            <IconButton size="small" color="error" onClick={onDelete}>
-              <DeleteIcon fontSize="small" sx={{ color: '#ef4444' }} />
-            </IconButton>
-          </Tooltip>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ---------- Page ---------- */
-export default function ViewColors() {
-  const navigate = useNavigate();
-
-  const { data, isLoading, isError, refetch } = useColors();
-  const { mutateAsync: deleteColor, isPending: deleting } = useDeleteColor();
-
-  const [confirm, setConfirm] = React.useState({ open: false, id: null as string | null, name: '' });
-  const [toast, setToast] = React.useState({ open: false, msg: '', sev: 'success' as 'success' | 'error' });
-  const [query, setQuery] = React.useState('');
-  const [sortAnchor, setSortAnchor] = React.useState<HTMLElement | null>(null);
-  const [sortKey, setSortKey] = React.useState('name_asc');
-
-  const rows = React.useMemo(() => (data?.rows ?? []) as Color[], [data]);
-
-  const filtered = React.useMemo(() => {
-    const q = query.trim().toLowerCase();
-    let list = rows.filter((c) => {
-      if (!q) return true;
-      const hay = `${c.name ?? ''} ${c.slug ?? ''} ${c.value ?? ''}`.toLowerCase();
-      return hay.includes(q);
+  const filteredData = React.useMemo(() => {
+    if (!colors?.rows) return [];
+    return colors.rows.filter((row: Color) => {
+        const matchesSearch = row.name.toLowerCase().includes(search.toLowerCase()) || 
+                            row.value.toLowerCase().includes(search.toLowerCase());
+        const matchesStatus = status === 'all' || 
+                             (status === 'active' && row.isActive) || 
+                             (status === 'inactive' && !row.isActive);
+        return matchesSearch && matchesStatus;
     });
-
-    switch (sortKey) {
-      case 'name_desc':
-        list = list.sort((a, b) => String(b.name || '').localeCompare(String(a.name || '')));
-        break;
-      case 'hex_asc':
-        list = list.sort((a, b) => String(a.value || '').localeCompare(String(b.value || '')));
-        break;
-      case 'hex_desc':
-        list = list.sort((a, b) => String(b.value || '').localeCompare(String(a.value || '')));
-        break;
-      case 'name_asc':
-      default:
-        list = list.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
-    }
-    return list;
-  }, [rows, query, sortKey]);
-
-  const openConfirm = (row: Color) => setConfirm({ open: true, id: (row.id ?? row._id) ?? null, name: row.name || '' });
-  const closeConfirm = () => setConfirm({ open: false, id: null, name: '' });
+  }, [colors, search, status]);
 
   const handleDelete = async () => {
-    if (!confirm.id) return;
-    try {
-      await deleteColor(confirm.id);
-      setToast({ open: true, msg: 'Color deleted', sev: 'success' });
-    } catch (e) {
-      setToast({ open: true, msg: (e as Error)?.message || 'Delete failed', sev: 'error' });
-    } finally {
-      closeConfirm();
+    if (colorToDelete) {
+      await delMutation.mutateAsync(colorToDelete.id);
+      setDeleteDialogOpen(false);
+      setColorToDelete(null);
     }
   };
 
-  const handleCopied = () => setToast({ open: true, msg: 'Color copied', sev: 'success' });
+  const getStatusBadge = (isActive: boolean) => {
+    if (isActive) return <Badge className="bg-emerald-100 text-emerald-700 border-none hover:bg-emerald-100 flex gap-1 w-fit"><CheckCircle className="h-3 w-3" /> Active</Badge>;
+    return <Badge className="bg-rose-100 text-rose-700 border-none hover:bg-rose-100 flex gap-1 w-fit"><XCircle className="h-3 w-3" /> Inactive</Badge>;
+  };
 
   return (
-    <Row>
-      <Col sm={12}>
-        <MainCard title="Colors" isOption={false} cardClass="" optionClass="" CardBodyClass="">
-          {/* Header bar */}
-          <div
-            style={{
-              display: 'flex',
-              gap: 12,
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 16,
-              flexWrap: 'wrap'
-            }}
-          >
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flex: '1 1 360px' }}>
-              <div
-                style={{
-                  position: 'relative',
-                  flex: 1,
-                  minWidth: 260,
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  borderRadius: 12,
-                  overflow: 'hidden',
-                  background: 'rgba(2,6,23,0.5)'
-                }}
-              >
-                <SearchIcon
-                  fontSize="small"
-                  style={{ position: 'absolute', left: 10, top: 10, color: '#a3a3a3' }}
-                />
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search colors by name, slug, or hex…"
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px 10px 34px',
-                    color: '#e5e7eb',
-                    background: 'transparent',
-                    border: 'none',
-                    outline: 'none'
-                  }}
-                />
-              </div>
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="w-full flex justify-center mb-[-20px]">
+          <ParticleTextEffect words={["Color", "Palettes"]} />
+      </div>
 
-              <Tooltip title="Sort">
-                <IconButton size="small" onClick={(e) => setSortAnchor(e.currentTarget)}>
-                  <SortIcon sx={{ color: '#e5e7eb' }} />
-                </IconButton>
-              </Tooltip>
-              <Menu
-                anchorEl={sortAnchor}
-                open={Boolean(sortAnchor)}
-                onClose={() => setSortAnchor(null)}
-                keepMounted
-              >
-                <MenuItem onClick={() => { setSortKey('name_asc'); setSortAnchor(null); }}>Name (A–Z)</MenuItem>
-                <MenuItem onClick={() => { setSortKey('name_desc'); setSortAnchor(null); }}>Name (Z–A)</MenuItem>
-                <MenuItem onClick={() => { setSortKey('hex_asc'); setSortAnchor(null); }}>Hex (A–Z)</MenuItem>
-                <MenuItem onClick={() => { setSortKey('hex_desc'); setSortAnchor(null); }}>Hex (Z–A)</MenuItem>
-              </Menu>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: "center", gap: 8 }}>
-              <Chip
-                icon={<CheckCircleIcon />}
-                label={`${filtered.length} ${filtered.length === 1 ? 'color' : 'colors'}`}
-                sx={softPill('rgba(34,197,94,0.15)', '#86efac', 'rgba(34,197,94,0.35)')}
-              />
-              <Button isLink href="/colors/add" isStartIcon startIcon={<IoBag />} variant="primary" color="primary">
-                Add Color
-              </Button>
-            </div>
-          </div>
-
-          {/* States */}
-          {isLoading && (
-            <div className="py-2">
-              <Row className="gy-3">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <Col key={i} md={4} lg={3}>
-                    <Skeleton
-                      variant="rounded"
-                      height={180}
-                      sx={{ bgcolor: 'rgba(255,255,255,0.07)', borderRadius: 2 }}
+      <Card className="border-none shadow-md bg-white overflow-hidden">
+        <CardHeader className="p-6 border-b bg-neutral-50/50">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="relative w-full md:w-96 group">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 group-focus-within:text-primary transition-colors" />
+                    <Input
+                        placeholder="Search colors..."
+                        className="pl-10 bg-white border-neutral-200 focus-visible:ring-primary/20 transition-all rounded-xl"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
                     />
-                  </Col>
-                ))}
-              </Row>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="rounded-xl border-neutral-200 flex gap-2">
+                            <Filter className="h-4 w-4 text-neutral-400" />
+                            Status: {status.charAt(0).toUpperCase() + status.slice(1)}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="rounded-xl">
+                        <DropdownMenuItem onClick={() => setStatus('all')}>All</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setStatus('active')}>Active</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setStatus('inactive')}>Inactive</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button onClick={() => router.push('/colors/add')} className="bg-primary hover:bg-primary/90 text-white shadow-md transition-all rounded-xl">
+                      <Plus className="mr-2 h-4 w-4" /> Add Color
+                    </Button>
+                </div>
             </div>
-          )}
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader className="bg-neutral-50/50">
+              <TableRow className="hover:bg-transparent border-neutral-100">
+                <TableHead className="w-[100px] pl-6 py-4 font-semibold text-neutral-600 uppercase text-[10px] tracking-wider">Preview</TableHead>
+                <TableHead className="font-semibold text-neutral-600 uppercase text-[10px] tracking-wider">Color Name</TableHead>
+                <TableHead className="font-semibold text-neutral-600 uppercase text-[10px] tracking-wider">Hex Value</TableHead>
+                <TableHead className="font-semibold text-neutral-600 uppercase text-[10px] tracking-wider">Mode</TableHead>
+                <TableHead className="font-semibold text-neutral-600 uppercase text-[10px] tracking-wider">Status</TableHead>
+                <TableHead className="font-semibold text-neutral-600 uppercase text-[10px] tracking-wider text-right pr-6">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    {Array.from({ length: 6 }).map((_, j) => (
+                      <TableCell key={j} className="py-8"><div className="h-4 bg-neutral-100 animate-pulse rounded" /></TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : filteredData?.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-64 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2 text-neutral-400">
+                        <Droplets className="h-12 w-12 opacity-20" />
+                        <p>No colors found.</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredData.map((clr: Color) => (
+                  <TableRow key={clr.id} className="hover:bg-neutral-50/50 transition-colors border-neutral-100 group">
+                    <TableCell className="pl-6 py-4">
+                      <div 
+                        className="h-10 w-10 rounded-full border border-neutral-200 shadow-inner" 
+                        style={{ backgroundColor: clr.value || 'transparent' }}
+                      />
+                    </TableCell>
+                    <TableCell className="font-semibold text-neutral-800">
+                      {clr.name}
+                    </TableCell>
+                    <TableCell>
+                      <code className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600 font-mono">
+                        {clr.value || '#000000'}
+                      </code>
+                    </TableCell>
+                    <TableCell>
+                       <Badge variant="secondary" className="bg-slate-100 text-slate-600 hover:bg-slate-100 rounded-lg font-normal">
+                          {clr.mode || 'N/A'}
+                       </Badge>
+                    </TableCell>
+                    <TableCell>{getStatusBadge(clr.isActive)}</TableCell>
+                    <TableCell className="text-right pr-6">
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-neutral-400 hover:text-amber-600 hover:bg-amber-100 rounded-lg"
+                                onClick={() => router.push(`/colors/edit/${clr.id}`)}
+                            >
+                                <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-neutral-400 hover:text-rose-600 hover:bg-rose-100 rounded-lg"
+                                onClick={() => {
+                                    setColorToDelete(clr);
+                                    setDeleteDialogOpen(true);
+                                }}
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
 
-          {isError && (
-            <Alert
-              severity="warning"
-              sx={{ mb: 2 }}
-              action={
-                <MUIButton size="small" onClick={() => refetch()}>
-                  Retry
-                </MUIButton>
-              }
-            >
-              Failed to load colors.
-            </Alert>
-          )}
+                        <div className="block group-hover:hidden">
+                            <MoreHorizontal className="h-4 w-4 mx-auto text-neutral-300" />
+                        </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
-          {!isLoading && filtered.length === 0 && !isError && (
-            <div
-              style={{
-                padding: '28px 16px',
-                border: '1px dashed rgba(255,255,255,0.12)',
-                borderRadius: 12,
-                color: '#9ca3af',
-                textAlign: 'center'
-              }}
-            >
-              No colors found. Try adjusting your search.
-            </div>
-          )}
-
-          {/* Grid */}
-          {!isLoading && filtered.length > 0 && (
-            <Row className="gy-4">
-              {filtered.map((c) => (
-                <Col key={c.id ?? c._id} md={4} lg={3}>
-                  <ColorCard
-                    color={c}
-                    onCopied={handleCopied}
-                    onEdit={() => navigate(`/colors/edit/${c.id ?? c._id}`)}
-                    onDelete={() => setConfirm({ open: true, id: (c.id ?? c._id) ?? null, name: c.name || '' })}
-                  />
-                </Col>
-              ))}
-            </Row>
-          )}
-
-          {/* Confirm Delete */}
-          <Dialog open={confirm.open} onClose={deleting ? undefined : closeConfirm}>
-            <DialogTitle>Delete Color?</DialogTitle>
-            <DialogContent>
-              Are you sure you want to delete <strong>{confirm.name || 'this color'}</strong>? This action cannot be undone.
-            </DialogContent>
-            <DialogActions>
-              <MUIButton onClick={closeConfirm} disabled={deleting}>
-                Cancel
-              </MUIButton>
-              <MUIButton color="error" variant="contained" onClick={handleDelete} disabled={deleting}>
-                {deleting ? 'Deleting…' : 'Delete'}
-              </MUIButton>
-            </DialogActions>
-          </Dialog>
-
-          {/* Toast */}
-          <Snackbar
-            open={toast.open}
-            autoHideDuration={2200}
-            onClose={() => setToast((t) => ({ ...t, open: false }))}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-          >
-            <Alert
-              onClose={() => setToast((t) => ({ ...t, open: false }))}
-              severity={toast.sev}
-              variant="filled"
-              sx={{ width: '100%' }}
-            >
-              {toast.msg}
-            </Alert>
-          </Snackbar>
-        </MainCard>
-      </Col>
-    </Row>
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="rounded-2xl border-none shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Delete Color</DialogTitle>
+            <DialogDescription className="text-neutral-500 pt-2 text-sm leading-relaxed">
+              Are you sure you want to delete <span className="font-bold text-neutral-900">{colorToDelete?.name}</span>?
+              This action is permanent and cannot be reversed.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0 pt-4">
+            <Button variant="outline" className="rounded-xl border-neutral-200 text-neutral-600 hover:bg-neutral-50" onClick={() => setDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" className="rounded-xl shadow-lg shadow-rose-500/20" onClick={handleDelete} disabled={delMutation.isPending}>
+                {delMutation.isPending ? "Deleting..." : "Confirm Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

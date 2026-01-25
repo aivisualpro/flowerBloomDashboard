@@ -1,244 +1,290 @@
-import React from 'react';
-import { Box, Container, Typography, Button } from '@mui/material';
-import { Card, CardContent, CardHeader } from '@mui/material';
-import { Grid } from '@mui/material';
-import { TextField } from '@mui/material';
-import { Stack, IconButton } from '@mui/material';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { Save } from '@mui/icons-material';
-import Btn from '../../../components/Button';
+'use client';
 
-import { useAddBrand, useUpdateBrand } from '../../../hooks/brands/useBrandsMutation';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import { Save, ArrowLeft, Upload, Loader2, Trash2, Globe, Store } from 'lucide-react';
+
+// API
 import { getBrandById } from '../../../api/brands';
+import { useAddBrand, useUpdateBrand } from '../../../hooks/brands/useBrandsMutation';
 
-const AddOrEditBrands = () => {
-  const navigate = useNavigate();
+// UI Components
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
-  const [form, setForm] = React.useState({
+interface FormState {
+  name: string;
+  ar_name: string;
+  countryCode: string;
+  logo: string;
+  logoFile: File | null;
+  isActive: boolean;
+}
+
+export default function AddOrEditBrands() {
+  const router = useRouter();
+  const { id } = useParams();
+  const brandId = Array.isArray(id) ? id[0] : id;
+  const isEdit = Boolean(brandId);
+
+  const [form, setForm] = useState<FormState>({
     name: '',
     ar_name: '',
     countryCode: '',
-    logoFile: null, // File object (new upload)
-    logoPreview: '' // URL for preview (blob: OR http(s) from server)
+    logo: '',
+    logoFile: null,
+    isActive: true,
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // Fetch brand detail if edit
+  const { data: detail, isFetching: isLoadingDetail } = useQuery({
+    queryKey: ['brand', brandId],
+    queryFn: () => getBrandById(brandId as string),
+    enabled: isEdit && !!brandId,
+    refetchOnWindowFocus: false
   });
 
-  const { id } = useParams(); // /brands/:id/edit
-  const location = useLocation();
-  const isEdit = location.pathname.includes('/edit');
+  const { mutateAsync: addBrand, isPending: isAdding } = useAddBrand();
+  const { mutateAsync: updateBrand, isPending: isUpdating } = useUpdateBrand();
 
-  const setField = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  };
-
-  // ----- detail (edit) -----
-  const { data: detail } = useQuery({
-    queryKey: ['brand', id],
-    queryFn: () => getBrandById(id), // should return the doc object
-    enabled: isEdit && !!id,
-    select: (doc) => doc || {},
-    // prevent background refills overwriting the form
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    staleTime: 5 * 60 * 1000
-  });
-
-  // one-time hydration guard per id
-  const hydratedRef = React.useRef(false);
-  React.useEffect(() => {
-    hydratedRef.current = false; // new id => allow hydration again
-  }, [id]);
-
-  // Revoke blob URLs safely
-  const revokeIfBlob = (url) => {
-    if (url && url.startsWith('blob:')) URL.revokeObjectURL(url);
-  };
-
-  // Prefill ONCE from server on first data arrival
-  React.useEffect(() => {
-    if (!isEdit || !detail || hydratedRef.current) return;
-
-    setForm((p) => ({
-      ...p,
-      name: detail?.name || '',
-      ar_name: detail?.ar_name || '',
-      countryCode: detail?.countryCode || '',
+  /* hydrate edit */
+  useEffect(() => {
+    if (!isEdit || !detail) return;
+    setForm({
+      name: detail.name || '',
+      ar_name: detail.ar_name || '',
+      countryCode: detail.countryCode || '',
+      logo: detail.logo || detail.image || '',
       logoFile: null,
-      logoPreview: detail?.logo || detail?.logoUrl || ''
-    }));
-
-    hydratedRef.current = true;
+      isActive: detail.isActive !== undefined ? detail.isActive : true,
+    });
   }, [isEdit, detail]);
 
-  // Cleanup blob on unmount
-  React.useEffect(() => {
-    return () => revokeIfBlob(form.logoPreview);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  /* setters */
+  const setField = (k: keyof FormState, v: any) => setForm((f) => ({ ...f, [k]: v }));
 
-  const handleFileChange = (e) => {
+  const onLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) return;
-
-    // Revoke old blob preview if any
-    revokeIfBlob(form.logoPreview);
-
-    setForm((prev) => ({
-      ...prev,
-      logoFile: file,
-      logoPreview: URL.createObjectURL(file)
-    }));
+    setField('logo', URL.createObjectURL(file));
+    setField('logoFile', file);
   };
 
-  const clearLogo = () => {
-    revokeIfBlob(form.logoPreview);
-    setForm((prev) => ({ ...prev, logoFile: null, logoPreview: '' }));
+  const validateForm = () => {
+    const errs: Record<string, string> = {};
+    if (!form.name.trim()) errs.name = 'Name is required';
+    if (!form.ar_name.trim()) errs.ar_name = 'Arabic name is required';
+    if (!form.countryCode.trim()) errs.countryCode = 'Country Code is required';
+    return errs;
   };
 
-  const { mutateAsync: addMutation, isPending: addPending } = useAddBrand();
-  const { mutateAsync: updateMutation, isPending: updatePending } = useUpdateBrand();
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.name.trim()) return;
-
+  const buildFormData = () => {
     const fd = new FormData();
     fd.append('name', form.name.trim());
     fd.append('ar_name', form.ar_name.trim());
-    fd.append('countryCode', form.countryCode || '');
-    if (form.logoFile) fd.append('logo', form.logoFile);
+    fd.append('countryCode', form.countryCode.trim());
+    fd.append('isActive', String(!!form.isActive));
+    if (form.logoFile) {
+      fd.append('logo', form.logoFile);
+    }
+    return fd;
+  };
+
+  const loading = isLoadingDetail || isAdding || isUpdating;
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setFieldErrors({});
+
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      setError('Please fill all required fields.');
+      return;
+    }
 
     try {
+      const formData = buildFormData();
       if (isEdit) {
-        await updateMutation({ id, formData: fd });
+        await updateBrand({ id: brandId as string, formData });
       } else {
-        await addMutation(fd);
-        // reset for add
-        revokeIfBlob(form.logoPreview);
-        setForm({ name: '', countryCode: '', logoFile: null, logoPreview: '' });
+        await addBrand(formData);
       }
-      navigate('/brands', { replace: true });
-    } catch (err) {
-      console.error(err);
+      router.push('/brands');
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err.message || 'Save failed');
     }
   };
 
-  const disabled = addPending || updatePending;
-  const title = isEdit ? 'Edit Brand' : 'Add Brand';
-  const btnLabel = isEdit ? 'Save Changes' : 'Add Brand';
-
   return (
-    <>
-      <Box component="form" onSubmit={handleSubmit} noValidate sx={{ py: '2rem' }}>
-        <Container maxWidth="xl" sx={{ px: { xs: 1, md: 2 } }}>
-          <Typography variant="h5" sx={{ mb: 2 }}>
-            {title}
-          </Typography>
+    <div className="min-h-screen bg-slate-50/50 pb-20">
+      <div className="container mx-auto px-4 py-8 md:max-w-4xl">
+        {/* Header */}
+        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 border-neutral-200 text-neutral-800 bg-white shadow-sm hover:bg-neutral-100"
+              onClick={() => router.back()}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+                {isEdit ? 'Edit Brand' : 'Create Brand'}
+              </h1>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+             <Button
+                variant="default"
+                onClick={handleSubmit}
+                className="min-w-[140px]"
+                disabled={loading}
+              >
+               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+               {isEdit ? 'Save Changes' : 'Create Brand'}
+             </Button>
+          </div>
+        </div>
 
-          <Grid container spacing={2}>
-            <Grid item xs={12} style={{ width: '100%' }}>
-              {/* BASICS */}
-              <Card variant="outlined" sx={{ mb: 2, borderRadius: 3, opacity: disabled ? 0.7 : 1, backgroundColor: '#111' }}>
-                <CardHeader title="Basics" sx={{ pb: 0 }} />
-                <CardContent>
-                  <Grid container spacing={2} alignItems="stretch">
-                    <Grid sx={{ width: '49%' }} item xs={12} md={6}>
-                      <TextField
-                        label="Name *"
-                        fullWidth
-                        required
+        {error && (
+            <div className="mb-6 rounded-md bg-red-50 p-4 text-sm text-red-600 border border-red-100">
+                {error}
+            </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <div className="space-y-8 lg:col-span-2">
+            {/* BASICS */}
+            <Card className="border-slate-200 shadow-sm">
+              <CardHeader>
+                <CardTitle>Basic Information</CardTitle>
+                <CardDescription>Brand name and localization details</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Brand Name (English) *</Label>
+                    <Input
+                        id="name"
+                        placeholder="e.g. Nike"
                         value={form.name}
-                        disabled={disabled}
                         onChange={(e) => setField('name', e.target.value)}
-                      />
-                    </Grid>
-                    <Grid sx={{ width: '49%' }} item xs={12} md={6}>
-                      <TextField
-                        label="Name (Arabic) *"
-                        fullWidth
-                        required
+                        className={fieldErrors.name ? "border-red-500" : ""}
+                    />
+                     {fieldErrors.name && <p className="text-xs text-red-500">{fieldErrors.name}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ar_name" className="text-right block w-full">الاسم (عربي) *</Label>
+                    <Input
+                        id="ar_name"
+                        dir="rtl"
+                        placeholder="مثال: نايكي"
                         value={form.ar_name}
-                        disabled={disabled}
                         onChange={(e) => setField('ar_name', e.target.value)}
-                      />
-                    </Grid>
+                         className={fieldErrors.ar_name ? "border-red-500 text-right" : "text-right"}
+                    />
+                    {fieldErrors.ar_name && <p className="text-xs text-red-500 text-right">{fieldErrors.ar_name}</p>}
+                  </div>
+                </div>
 
-                    <Grid sx={{ width: '49%' }} item xs={12} md={6}>
-                      <TextField
-                        label="Country Code *"
-                        fullWidth
-                        required
-                        value={form.countryCode}
-                        disabled={disabled}
-                        onChange={(e) => setField('countryCode', e.target.value)}
-                        placeholder="e.g., US, PK, AE"
-                      />
-                    </Grid>
+                <div className="space-y-2">
+                    <Label htmlFor="countryCode">Country Code *</Label>
+                    <div className="relative">
+                        <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                        <Input
+                            id="countryCode"
+                            placeholder="e.g. US, AE, PK"
+                            value={form.countryCode}
+                            onChange={(e) => setField('countryCode', e.target.value.toUpperCase())}
+                            className={`pl-10 ${fieldErrors.countryCode ? "border-red-500" : ""}`}
+                            maxLength={3}
+                        />
+                    </div>
+                    {fieldErrors.countryCode && <p className="text-xs text-red-500">{fieldErrors.countryCode}</p>}
+                    <p className="text-[10px] text-muted-foreground mt-1">ISO 3166-1 alpha-2 or alpha-3 code</p>
+                </div>
+              </CardContent>
+            </Card>
 
-                    {/* Logo upload */}
-                    <Grid item xs={12}>
-                      <Stack spacing={1.2}>
-                        <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                          Logo *
-                        </Typography>
-
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Button variant="outlined" startIcon={<CloudUploadIcon />} component="label" disabled={disabled}>
-                            Upload Logo
-                            <input type="file" accept="image/*" hidden onChange={handleFileChange} />
-                          </Button>
-
-                          {(form.logoFile || form.logoPreview) && (
-                            <IconButton aria-label="clear logo" onClick={clearLogo} disabled={disabled}>
-                              <DeleteOutlineIcon />
-                            </IconButton>
-                          )}
-                        </Stack>
-
-                        <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                          {form.logoFile ? form.logoFile.name : form.logoPreview ? 'Using existing logo' : 'No file selected'}
-                        </Typography>
-
-                        {/* Preview: works for blob: and http(s): */}
-                        {form.logoPreview ? (
-                          <Box
-                            sx={{
-                              mt: 1,
-                              width: 140,
-                              height: 140,
-                              borderRadius: 2,
-                              overflow: 'hidden',
-                              border: '1px dashed rgba(255,255,255,0.2)'
-                            }}
-                          >
-                            <img
-                              src={form.logoPreview}
-                              alt="Logo preview"
-                              style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }}
+            {/* MEDIA */}
+            <Card className="border-slate-200 shadow-sm">
+              <CardHeader>
+                <CardTitle>Brand Assets</CardTitle>
+                <CardDescription>Upload brand logo and visual identity</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-3">
+                    <Label>Brand Logo</Label>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                        {form.logo ? (
+                            <div className="relative h-40 w-40 overflow-hidden rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center p-4">
+                                <img src={form.logo} alt="Brand Logo" className="max-h-full max-w-full object-contain" />
+                                <Button
+                                    size="icon"
+                                    variant="destructive"
+                                    className="absolute top-2 right-2 h-6 w-6"
+                                    onClick={() => setForm(f => ({...f, logo: '', logoFile: null}))}
+                                >
+                                    <Trash2 className="h-3 w-3" />
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="flex h-40 w-40 items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400">
+                                <Store className="h-10 w-10 opacity-20" />
+                            </div>
+                        )}
+                        <div className="flex flex-col gap-2">
+                            <input
+                                id="logo-upload"
+                                type="file"
+                                className="hidden"
+                                accept="image/*"
+                                onChange={onLogoSelect}
                             />
-                          </Box>
-                        ) : null}
-                      </Stack>
-                    </Grid>
-                  </Grid>
+                            <Label htmlFor="logo-upload">
+                                <div className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground cursor-pointer">
+                                    <Upload className="mr-2 h-4 w-4" /> Upload Logo
+                                </div>
+                            </Label>
+                            <p className="text-xs text-muted-foreground">Transparent PNG recommended. Max 2MB.</p>
+                        </div>
+                    </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-8">
+            <Card className="border-slate-200 shadow-sm">
+                <CardHeader className="pb-4">
+                    <CardTitle className="text-base">Settings</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <Label className="text-base">Active Status</Label>
+                            <p className="text-xs text-muted-foreground">Enable brand visibility</p>
+                        </div>
+                        <Switch
+                            checked={form.isActive}
+                            onCheckedChange={(c) => setField('isActive', c)}
+                        />
+                    </div>
                 </CardContent>
-              </Card>
-
-              <Stack direction="row" spacing={1.5}>
-                {/* Ensure your <Btn /> forwards the "type" prop */}
-                <Btn type="submit" isStartIcon startIcon={<Save />} variant="contained" color="primary" disabled={disabled}>
-                  {btnLabel}
-                </Btn>
-              </Stack>
-            </Grid>
-          </Grid>
-        </Container>
-      </Box>
-    </>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
   );
-};
-
-export default AddOrEditBrands;
+}

@@ -1,13 +1,12 @@
 {
-  "/api/analytics/sales/route": "app/api/analytics/sales/route.js",
-  "/api/analytics/customer-reviews/route": "app/api/analytics/customer-reviews/route.js",
-  "/api/analytics/current-year-order/route": "app/api/analytics/current-year-order/route.js",
-  "/api/analytics/overview/route": "app/api/analytics/overview/route.js",
-  "/api/analytics/counts/route": "app/api/analytics/counts/route.js",
-  "/api/orders/lists/route": "app/api/orders/lists/route.js",
-  "/(dashboard)/orders/[id]/page": "app/(dashboard)/orders/[id]/page.js",
-  "/(dashboard)/page": "app/(dashboard)/page.js",
-  "/(dashboard)/subCategories/page": "app/(dashboard)/subCategories/page.js",
-  "/(dashboard)/orders/page": "app/(dashboard)/orders/page.js",
-  "/(dashboard)/categories/page": "app/(dashboard)/categories/page.js"
+  "/api/recipient/route": "app/api/recipient/route.js",
+  "/api/recipient/lists/route": "app/api/recipient/lists/route.js",
+  "/api/packaging/lists/[id]/route": "app/api/packaging/lists/[id]/route.js",
+  "/api/packaging/update/[id]/route": "app/api/packaging/update/[id]/route.js",
+  "/api/packaging/lists/route": "app/api/packaging/lists/route.js",
+  "/(dashboard)/recipients/add/page": "app/(dashboard)/recipients/add/page.js",
+  "/(dashboard)/packaging/page": "app/(dashboard)/packaging/page.js",
+  "/(dashboard)/packaging/edit/[id]/page": "app/(dashboard)/packaging/edit/[id]/page.js",
+  "/(dashboard)/recipients/page": "app/(dashboard)/recipients/page.js",
+  "/(dashboard)/occasions/add/page": "app/(dashboard)/occasions/add/page.js"
 }

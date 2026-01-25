@@ -1,0 +1,25 @@
+"use strict";
+/*
+ * ATTENTION: An "eval-source-map" devtool has been used.
+ * This devtool is neither made for production nor for readable output files.
+ * It uses "eval()" calls to create a separate source file with attached SourceMaps in the browser devtools.
+ * If you are trying to read the output file, select a different devtool (https://webpack.js.org/configuration/devtool/)
+ * or disable the default devtool with "devtool: false".
+ * If you are looking for production-ready output files, see mode: "production" (https://webpack.js.org/configuration/mode/).
+ */
+exports.id = "_rsc_src_lib_cloudinary_ts";
+exports.ids = ["_rsc_src_lib_cloudinary_ts"];
+exports.modules = {
+
+/***/ "(rsc)/./src/lib/cloudinary.ts":
+/*!*******************************!*\
+  !*** ./src/lib/cloudinary.ts ***!
+  \*******************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   uploadToCloudinary: () => (/* binding */ uploadToCloudinary)\n/* harmony export */ });\n/* harmony import */ var cloudinary__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! cloudinary */ \"(rsc)/./node_modules/cloudinary/cloudinary.js\");\n/* harmony import */ var cloudinary__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(cloudinary__WEBPACK_IMPORTED_MODULE_0__);\n\ncloudinary__WEBPACK_IMPORTED_MODULE_0__.v2.config({\n    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,\n    api_key: process.env.CLOUDINARY_CLOUD_API_KEY,\n    api_secret: process.env.CLOUDINARY_CLOUD_API_SECRET\n});\nconst uploadToCloudinary = async (file)=>{\n    const arrayBuffer = await file.arrayBuffer();\n    const buffer = Buffer.from(arrayBuffer);\n    return new Promise((resolve, reject)=>{\n        cloudinary__WEBPACK_IMPORTED_MODULE_0__.v2.uploader.upload_stream({\n            resource_type: 'auto',\n            folder: 'dashboard-uploads'\n        }, (error, result)=>{\n            if (error) return reject(error);\n            if (result) return resolve(result.secure_url);\n            reject(new Error('Unknown upload error'));\n        }).end(buffer);\n    });\n};\n//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiKHJzYykvLi9zcmMvbGliL2Nsb3VkaW5hcnkudHMiLCJtYXBwaW5ncyI6Ijs7Ozs7O0FBQThDO0FBRTlDQywwQ0FBVUEsQ0FBQ0MsTUFBTSxDQUFDO0lBQ2hCQyxZQUFZQyxRQUFRQyxHQUFHLENBQUNDLHFCQUFxQjtJQUM3Q0MsU0FBU0gsUUFBUUMsR0FBRyxDQUFDRyx3QkFBd0I7SUFDN0NDLFlBQVlMLFFBQVFDLEdBQUcsQ0FBQ0ssMkJBQTJCO0FBQ3JEO0FBRU8sTUFBTUMscUJBQXFCLE9BQU9DO0lBQ3ZDLE1BQU1DLGNBQWMsTUFBTUQsS0FBS0MsV0FBVztJQUMxQyxNQUFNQyxTQUFTQyxPQUFPQyxJQUFJLENBQUNIO0lBRTNCLE9BQU8sSUFBSUksUUFBUSxDQUFDQyxTQUFTQztRQUMzQmxCLDBDQUFVQSxDQUFDbUIsUUFBUSxDQUFDQyxhQUFhLENBQy9CO1lBQUVDLGVBQWU7WUFBUUMsUUFBUTtRQUFvQixHQUNyRCxDQUFDQyxPQUFPQztZQUNOLElBQUlELE9BQU8sT0FBT0wsT0FBT0s7WUFDekIsSUFBSUMsUUFBUSxPQUFPUCxRQUFRTyxPQUFPQyxVQUFVO1lBQzVDUCxPQUFPLElBQUlRLE1BQU07UUFDbkIsR0FDQUMsR0FBRyxDQUFDZDtJQUNSO0FBQ0YsRUFBRSIsInNvdXJjZXMiOlsiL1VzZXJzL2FkZWVsamFiYmFyLy5nZW1pbmkvYW50aWdyYXZpdHkvc2NyYXRjaC9jcnVuY2h5LWNvb2tpZXMtZGFzaGJvYXJkL3NyYy9saWIvY2xvdWRpbmFyeS50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyB2MiBhcyBjbG91ZGluYXJ5IH0gZnJvbSAnY2xvdWRpbmFyeSc7XG5cbmNsb3VkaW5hcnkuY29uZmlnKHtcbiAgY2xvdWRfbmFtZTogcHJvY2Vzcy5lbnYuQ0xPVURJTkFSWV9DTE9VRF9OQU1FLFxuICBhcGlfa2V5OiBwcm9jZXNzLmVudi5DTE9VRElOQVJZX0NMT1VEX0FQSV9LRVksXG4gIGFwaV9zZWNyZXQ6IHByb2Nlc3MuZW52LkNMT1VESU5BUllfQ0xPVURfQVBJX1NFQ1JFVCxcbn0pO1xuXG5leHBvcnQgY29uc3QgdXBsb2FkVG9DbG91ZGluYXJ5ID0gYXN5bmMgKGZpbGU6IEZpbGUgfCBCbG9iKTogUHJvbWlzZTxzdHJpbmc+ID0+IHtcbiAgY29uc3QgYXJyYXlCdWZmZXIgPSBhd2FpdCBmaWxlLmFycmF5QnVmZmVyKCk7XG4gIGNvbnN0IGJ1ZmZlciA9IEJ1ZmZlci5mcm9tKGFycmF5QnVmZmVyKTtcblxuICByZXR1cm4gbmV3IFByb21pc2UoKHJlc29sdmUsIHJlamVjdCkgPT4ge1xuICAgIGNsb3VkaW5hcnkudXBsb2FkZXIudXBsb2FkX3N0cmVhbShcbiAgICAgIHsgcmVzb3VyY2VfdHlwZTogJ2F1dG8nLCBmb2xkZXI6ICdkYXNoYm9hcmQtdXBsb2FkcycgfSxcbiAgICAgIChlcnJvciwgcmVzdWx0KSA9PiB7XG4gICAgICAgIGlmIChlcnJvcikgcmV0dXJuIHJlamVjdChlcnJvcik7XG4gICAgICAgIGlmIChyZXN1bHQpIHJldHVybiByZXNvbHZlKHJlc3VsdC5zZWN1cmVfdXJsKTtcbiAgICAgICAgcmVqZWN0KG5ldyBFcnJvcignVW5rbm93biB1cGxvYWQgZXJyb3InKSk7XG4gICAgICB9XG4gICAgKS5lbmQoYnVmZmVyKTtcbiAgfSk7XG59O1xuIl0sIm5hbWVzIjpbInYyIiwiY2xvdWRpbmFyeSIsImNvbmZpZyIsImNsb3VkX25hbWUiLCJwcm9jZXNzIiwiZW52IiwiQ0xPVURJTkFSWV9DTE9VRF9OQU1FIiwiYXBpX2tleSIsIkNMT1VESU5BUllfQ0xPVURfQVBJX0tFWSIsImFwaV9zZWNyZXQiLCJDTE9VRElOQVJZX0NMT1VEX0FQSV9TRUNSRVQiLCJ1cGxvYWRUb0Nsb3VkaW5hcnkiLCJmaWxlIiwiYXJyYXlCdWZmZXIiLCJidWZmZXIiLCJCdWZmZXIiLCJmcm9tIiwiUHJvbWlzZSIsInJlc29sdmUiLCJyZWplY3QiLCJ1cGxvYWRlciIsInVwbG9hZF9zdHJlYW0iLCJyZXNvdXJjZV90eXBlIiwiZm9sZGVyIiwiZXJyb3IiLCJyZXN1bHQiLCJzZWN1cmVfdXJsIiwiRXJyb3IiLCJlbmQiXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZVJvb3QiOiIifQ==\n//# sourceURL=webpack-internal:///(rsc)/./src/lib/cloudinary.ts\n");
+
+/***/ })
+
+};
+;

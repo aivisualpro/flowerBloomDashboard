@@ -19,7 +19,7 @@ export async function getPackagingById(id: string) {
 // ---- 3) CREATE ----
 export async function createPackaging(payload: any) {
   const res = await axios.post(`${BASE}/packaging`, payload, {
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "multipart/form-data" },
   });
   return res.data;
 }
@@ -27,7 +27,7 @@ export async function createPackaging(payload: any) {
 // ---- 4) UPDATE ----
 export async function updatePackaging(id: string, payload: any) {
   const res = await axios.put(`${BASE}/packaging/update/${id}`, payload, {
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "multipart/form-data" },
   });
   return res.data;
 }

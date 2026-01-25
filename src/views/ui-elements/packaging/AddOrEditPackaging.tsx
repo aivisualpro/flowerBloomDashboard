@@ -1,225 +1,283 @@
-import React from 'react';
-import { Box, Container, Typography } from '@mui/material';
-import { Card, CardContent, CardHeader } from '@mui/material';
-import { Grid } from '@mui/material';
-import { TextField } from '@mui/material';
-import { Stack } from '@mui/material';
-import Autocomplete from '@mui/material/Autocomplete';
-import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { Save } from '@mui/icons-material';
-import Btn from '../../../components/Button';
+'use client';
 
-import { useAddPackaging, useUpdatePackaging } from '../../../hooks/packaging/usePackagingMutation';
+import React, { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import { Save, ArrowLeft, Upload, Loader2, Trash2, Gift } from 'lucide-react';
+
+// API
 import { getPackagingById } from '../../../api/packaging';
+import { useAddPackaging, useUpdatePackaging } from '../../../hooks/packaging/usePackagingMutation';
 
-const AddOrEditPackaging = () => {
-  const navigate = useNavigate();
+// UI Components
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
-  const [form, setForm] = React.useState({
+interface FormState {
+  name: string;
+  ar_name: string;
+  slug: string;
+  image: string;
+  imageFile: File | null;
+  isActive: boolean;
+}
+
+export default function AddOrEditPackaging() {
+  const router = useRouter();
+  const { id } = useParams();
+  const packagingId = Array.isArray(id) ? id[0] : id;
+  const isEdit = Boolean(packagingId);
+
+  const [form, setForm] = useState<FormState>({
     name: '',
     ar_name: '',
-    materials: [], // array of strings
-    ar_materials: [], // array of strings
+    slug: '',
+    image: '',
+    imageFile: null,
+    isActive: true,
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // Fetch packaging detail if edit
+  const { data: detail, isFetching: isLoadingDetail } = useQuery({
+    queryKey: ['packaging', packagingId],
+    queryFn: () => getPackagingById(packagingId as string),
+    enabled: isEdit && !!packagingId,
+    refetchOnWindowFocus: false
   });
 
-  const { id } = useParams();
-  const location = useLocation();
-  const isEdit = location.pathname.includes('/edit');
+  const { mutateAsync: addPackaging, isPending: isAdding } = useAddPackaging();
+  const { mutateAsync: updatePackaging, isPending: isUpdating } = useUpdatePackaging();
 
-  // ----- detail (edit) -----
-  const { data: detail } = useQuery({
-    queryKey: ['packaging', id],
-    queryFn: () => getPackagingById(id),
-    enabled: isEdit && !!id,
-    select: (doc) => doc || {},
-    refetchOnWindowFocus: false,
-  });
-
-  // hydrate once on edit
-  const hydratedRef = React.useRef(false);
-  React.useEffect(() => { hydratedRef.current = false; }, [id]);
-  React.useEffect(() => {
-    if (!isEdit || !detail || hydratedRef.current) return;
-    setForm((p) => ({
-      ...p,
-      name: detail?.name || '',
-      ar_name: detail?.ar_name || '',
-      materials: Array.isArray(detail?.materials) ? detail.materials : [],
-      ar_materials: Array.isArray(detail?.ar_materials) ? detail.ar_materials : [],
-    }));
-    hydratedRef.current = true;
+  /* hydrate edit */
+  useEffect(() => {
+    if (!isEdit || !detail) return;
+    setForm({
+      name: detail.name || '',
+      ar_name: detail.ar_name || '',
+      slug: detail.slug || '',
+      image: detail.image || '',
+      imageFile: null,
+      isActive: detail.isActive !== undefined ? detail.isActive : true,
+    });
   }, [isEdit, detail]);
 
-  const { mutateAsync: addMutation, isPending: addPending } = useAddPackaging();
-  const { mutateAsync: updateMutation, isPending: updatePending } = useUpdatePackaging();
+  /* setters */
+  const setField = (k: keyof FormState, v: any) => setForm((f) => ({ ...f, [k]: v }));
 
-  const disabled = addPending || updatePending;
-  const title = isEdit ? 'Edit Packaging' : 'Add Packaging';
-  const btnLabel = isEdit ? 'Save Changes' : 'Add Packaging';
-
-  // helpers for tags
-  const sanitize = (s) => s?.trim();
-  const dedupe = (arr) => {
-    const seen = new Set();
-    const out = [];
-    for (const s of arr) {
-      const key = s.toLowerCase();
-      if (!seen.has(key)) { seen.add(key); out.push(s); }
-    }
-    return out;
+  const onImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setField('image', URL.createObjectURL(file));
+    setField('imageFile', file);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.name.trim()) return;
+  const validateForm = () => {
+    const errs: Record<string, string> = {};
+    if (!form.name.trim()) errs.name = 'Name is required';
+    if (!form.ar_name.trim()) errs.ar_name = 'Arabic name is required';
+    return errs;
+  };
 
+  const buildFormData = () => {
     const fd = new FormData();
     fd.append('name', form.name.trim());
     fd.append('ar_name', form.ar_name.trim());
-    // ✅ send as array — prefer this if your backend accepts "materials[]" repeated
-    for (const m of form.materials.map(sanitize).filter(Boolean)) {
-      fd.append('materials[]', m);
+    if (form.slug) fd.append('slug', form.slug.trim());
+    fd.append('isActive', String(!!form.isActive));
+    if (form.imageFile) {
+      fd.append('image', form.imageFile);
     }
-    for (const m of form.ar_materials.map(sanitize).filter(Boolean)) {
-      fd.append('ar_materials[]', m);
+    return fd;
+  };
+
+  const loading = isLoadingDetail || isAdding || isUpdating;
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setFieldErrors({});
+
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      setError('Please fill all required fields.');
+      return;
     }
-    // OR: if your backend expects JSON: fd.append('materials', JSON.stringify(form.materials));
 
     try {
+      const formData = buildFormData();
       if (isEdit) {
-        await updateMutation({ id, formData: fd });
+        await updatePackaging({ id: packagingId as string, formData });
       } else {
-        await addMutation(fd);
-        setForm({ name: '', materials: [] });
+        await addPackaging(formData);
       }
-      navigate('/packaging', { replace: true });
-    } catch (err) {
-      console.error(err);
+      router.push('/packaging');
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err.message || 'Save failed');
     }
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} noValidate sx={{ py: '2rem' }}>
-      <Container maxWidth="xl" sx={{ px: { xs: 1, md: 2 } }}>
-        <Typography variant="h5" sx={{ mb: 2 }}>{title}</Typography>
+    <div className="min-h-screen bg-slate-50/50 pb-20">
+      <div className="container mx-auto px-4 py-8 md:max-w-4xl">
+        {/* Header */}
+        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 border-neutral-200 text-neutral-800 bg-white shadow-sm hover:bg-neutral-100"
+              onClick={() => router.back()}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+                {isEdit ? 'Edit Packaging' : 'Create Packaging'}
+              </h1>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+             <Button
+                variant="default"
+                onClick={handleSubmit}
+                className="min-w-[140px]"
+                disabled={loading}
+              >
+               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+               {isEdit ? 'Save Changes' : 'Create Packaging'}
+             </Button>
+          </div>
+        </div>
 
-        <Grid container spacing={2}>
-          <Grid item xs={12} style={{ width: '100%' }}>
-            <Card variant="outlined" sx={{ mb: 2, borderRadius: 3, opacity: disabled ? 0.7 : 1, backgroundColor: '#111' }}>
-              <CardHeader title="Basics" sx={{ pb: 0 }} />
-              <CardContent>
-                <Grid container spacing={2} alignItems="stretch">
-                  <Grid sx={{ width: '49%' }} item xs={12} md={6}>
-                    <TextField
-                      label="Name *"
-                      fullWidth
-                      required
-                      value={form.name}
-                      disabled={disabled}
-                      onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                    />
-                  </Grid>
-                  <Grid sx={{ width: '49%' }} item xs={12} md={6}>
-                    <TextField
-                      label="Name (Arabic) *"
-                      fullWidth
-                      required
-                      value={form.ar_name}
-                      disabled={disabled}
-                      onChange={(e) => setForm((p) => ({ ...p, ar_name: e.target.value }))}
-                    />
-                  </Grid>
+        {error && (
+            <div className="mb-6 rounded-md bg-red-50 p-4 text-sm text-red-600 border border-red-100">
+                {error}
+            </div>
+        )}
 
-                  {/* Materials as chips (tags) */}
-                  <Grid sx={{ width: '49%' }} item xs={12} md={6}>
-                    <Autocomplete
-                      multiple
-                      freeSolo
-                      options={[]}                 // no predefined options
-                      value={form.materials}
-                      onChange={(_, values) => {
-                        // values can include strings or objects; keep strings only
-                        const cleaned = dedupe(
-                          (values || [])
-                            .map((v) => (typeof v === 'string' ? v : String(v?.label ?? v?.value ?? '')))
-                            .map(sanitize)
-                            .filter(Boolean)
-                        );
-                        setForm((p) => ({ ...p, materials: cleaned }));
-                      }}
-                      filterSelectedOptions
-                      disableCloseOnSelect
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label="Materials * (press Enter to add)"
-                          placeholder="e.g., Plastic, Paper, Glass"
-                          disabled={disabled}
-                          onKeyDown={(e) => {
-                            // also allow comma to commit a tag
-                            if (e.key === ',' && e.currentTarget.value) {
-                              e.preventDefault();
-                              const next = dedupe([...form.materials, sanitize(e.currentTarget.value)].filter(Boolean));
-                              setForm((p) => ({ ...p, materials: next }));
-                            }
-                          }}
-                        />
-                      )}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <div className="space-y-8 lg:col-span-2">
+            {/* BASICS */}
+            <Card className="border-slate-200 shadow-sm">
+              <CardHeader>
+                <CardTitle>Basic Information</CardTitle>
+                <CardDescription>Packaging style and localized names</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Name (English) *</Label>
+                    <Input
+                        id="name"
+                        placeholder="e.g. Gift Box"
+                        value={form.name}
+                        onChange={(e) => setField('name', e.target.value)}
+                        className={fieldErrors.name ? "border-red-500" : ""}
                     />
-                  </Grid>
-
-                  <Grid sx={{ width: '49%' }} item xs={12} md={6}>
-                    <Autocomplete
-                      multiple
-                      freeSolo
-                      options={[]}                 // no predefined options
-                      value={form.ar_materials}
-                      onChange={(_, values) => {
-                        // values can include strings or objects; keep strings only
-                        const cleaned = dedupe(
-                          (values || [])
-                            .map((v) => (typeof v === 'string' ? v : String(v?.label ?? v?.value ?? '')))
-                            .map(sanitize)
-                            .filter(Boolean)
-                        );
-                        setForm((p) => ({ ...p, ar_materials: cleaned }));
-                      }}
-                      filterSelectedOptions
-                      disableCloseOnSelect
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          label="Materials (Arabic) * (press Enter to add)"
-                          placeholder="e.g., Plastic, Paper, Glass"
-                          disabled={disabled}
-                          onKeyDown={(e) => {
-                            // also allow comma to commit a tag
-                            if (e.key === ',' && e.currentTarget.value) {
-                              e.preventDefault();
-                              const next = dedupe([...form.ar_materials, sanitize(e.currentTarget.value)].filter(Boolean));
-                              setForm((p) => ({ ...p, ar_materials: next }));
-                            }
-                          }}
-                        />
-                      )}
+                     {fieldErrors.name && <p className="text-xs text-red-500">{fieldErrors.name}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ar_name" className="text-right block w-full">الاسم (عربي) *</Label>
+                    <Input
+                        id="ar_name"
+                        dir="rtl"
+                        placeholder="مثال: علبة هدايا"
+                        value={form.ar_name}
+                        onChange={(e) => setField('ar_name', e.target.value)}
+                         className={fieldErrors.ar_name ? "border-red-500 text-right" : "text-right"}
                     />
-                  </Grid>
+                    {fieldErrors.ar_name && <p className="text-xs text-red-500 text-right">{fieldErrors.ar_name}</p>}
+                  </div>
+                </div>
 
-                </Grid>
+                <div className="space-y-2">
+                    <Label htmlFor="slug">Slug (Optional)</Label>
+                    <Input
+                        id="slug"
+                        placeholder="gift-box"
+                        value={form.slug}
+                        onChange={(e) => setField('slug', e.target.value)}
+                        className="font-mono"
+                    />
+                </div>
               </CardContent>
             </Card>
 
-            <Stack direction="row" spacing={1.5}>
-              <Btn type="submit" isStartIcon startIcon={<Save />} variant="contained" color="primary" disabled={disabled}>
-                {btnLabel}
-              </Btn>
-            </Stack>
-          </Grid>
-        </Grid>
-      </Container>
-    </Box>
-  );
-};
+            {/* MEDIA */}
+            <Card className="border-slate-200 shadow-sm">
+              <CardHeader>
+                <CardTitle>Image</CardTitle>
+                <CardDescription>Preview of the packaging style</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-3">
+                    <Label>Packaging Image</Label>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                        {form.image ? (
+                            <div className="relative h-40 w-40 overflow-hidden rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center">
+                                <img src={form.image} alt="Packaging" className="h-full w-full object-cover" />
+                                <Button
+                                    size="icon"
+                                    variant="destructive"
+                                    className="absolute top-2 right-2 h-6 w-6"
+                                    onClick={() => setForm(f => ({...f, image: '', imageFile: null}))}
+                                >
+                                    <Trash2 className="h-3 w-3" />
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="flex h-40 w-40 items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400">
+                                <Gift className="h-10 w-10 opacity-20" />
+                            </div>
+                        )}
+                        <div className="flex flex-col gap-2">
+                            <input
+                                id="image-upload"
+                                type="file"
+                                className="hidden"
+                                accept="image/*"
+                                onChange={onImageSelect}
+                            />
+                            <Label htmlFor="image-upload">
+                                <div className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground cursor-pointer">
+                                    <Upload className="mr-2 h-4 w-4" /> Upload Image
+                                </div>
+                            </Label>
+                            <p className="text-xs text-muted-foreground">High resolution image recommended.</p>
+                        </div>
+                    </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-export default AddOrEditPackaging;
+          <div className="space-y-8">
+            <Card className="border-slate-200 shadow-sm">
+                <CardHeader className="pb-4">
+                    <CardTitle className="text-base">Settings</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <Label className="text-base">Active Status</Label>
+                            <p className="text-xs text-muted-foreground">Enable for product checkout</p>
+                        </div>
+                        <Switch
+                            checked={form.isActive}
+                            onCheckedChange={(c) => setField('isActive', c)}
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

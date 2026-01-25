@@ -5,8 +5,9 @@ import axios from "axios";
 import { API_BASE_URL as BASE } from '@/config';
 
 // ---- 1) LIST ----
-export async function getBrandsLists() {
-  const res = await axios.get(`${BASE}/brand/lists`);
+// ---- 1) LIST ----
+export async function getBrandsLists(params?: any) {
+  const res = await axios.get(`${BASE}/brand/lists`, { params });
   return res.data;
 }
 

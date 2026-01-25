@@ -1,4 +1,5 @@
 'use client';
+// force recompile
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -57,6 +58,7 @@ export default function AddOrEditSubCategories() {
     queryKey: ['subCategory', subCategoryId],
     queryFn: () => getSubCategoryById(subCategoryId as string),
     enabled: isEdit && !!subCategoryId,
+    select: (res: any) => (Array.isArray(res?.data) ? res.data[0] : (res?.data || res)),
     refetchOnWindowFocus: false
   });
 
@@ -70,14 +72,15 @@ export default function AddOrEditSubCategories() {
   /* hydrate edit */
   useEffect(() => {
     if (!isEdit || !detail) return;
+    const data = detail;
     setForm({
-      name: detail.name || '',
-      ar_name: detail.ar_name || '',
-      slug: detail.slug || '',
-      parent: detail.parent?._id || detail.parent?.id || detail.parent || '',
-      image: detail.image || '',
+      name: data.name || '',
+      ar_name: data.ar_name || '',
+      slug: data.slug || '',
+      parent: data.parent?._id || data.parent?.id || data.parent || data.category?._id || data.category?.id || data.category || '',
+      image: data.image || '',
       imageFile: null,
-      isActive: detail.isActive !== undefined ? detail.isActive : true,
+      isActive: data.isActive !== undefined ? data.isActive : true,
     });
   }, [isEdit, detail]);
 
@@ -105,6 +108,7 @@ export default function AddOrEditSubCategories() {
     fd.append('ar_name', form.ar_name.trim());
     if (form.slug) fd.append('slug', form.slug.trim());
     fd.append('parent', form.parent);
+    fd.append('category', form.parent); // Include both to ensure compatibility
     fd.append('isActive', String(!!form.isActive));
     if (form.imageFile) {
       fd.append('image', form.imageFile);
@@ -225,7 +229,7 @@ export default function AddOrEditSubCategories() {
                     </SelectTrigger>
                     <SelectContent>
                       {categoryOptions.map((cat: any) => (
-                        <SelectItem key={cat.id} value={cat.id}>
+                        <SelectItem key={String(cat.id)} value={String(cat.id)}>
                           {cat.name}
                         </SelectItem>
                       ))}

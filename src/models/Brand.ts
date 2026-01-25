@@ -4,6 +4,7 @@ const BrandSchema = new mongoose.Schema({
   name: { type: String, required: true },
   ar_name: { type: String },
   slug: { type: String, required: true, unique: true },
+  countryCode: { type: String },
   image: { type: String },
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });

@@ -1,210 +1,248 @@
-// src/pages/.../ViewPackaging.jsx
+'use client';
+
 import * as React from 'react';
-import { Box, Chip, Dialog, DialogTitle, DialogContent, DialogActions, Button as MuiButton, Tooltip, IconButton } from '@mui/material';
-import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
-import Button from '../../../components/Button';
-import { IoBag } from 'react-icons/io5';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CancelIcon from '@mui/icons-material/Cancel';
-import { useNavigate } from 'react-router-dom';
+import {
+  Plus,
+  Search,
+  Filter,
+  Eye,
+  Edit,
+  Trash2,
+  CheckCircle,
+  XCircle,
+  MoreHorizontal,
+  Package,
+  Gift
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ParticleTextEffect } from "@/components/ParticleTextEffect";
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+} from "@/components/ui/card"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
+
 import { usePackaging } from '../../../hooks/packaging/usePackaging';
 import { useDeletePackaging } from '../../../hooks/packaging/usePackagingMutation';
-import TablePagination from '../../../components/TablePagination';
 
-interface PackagingRow {
-  id?: string;
-  _id?: string;
+interface Packaging {
+  id: string;
   name: string;
-  ar_name?: string;
-  slug?: string;
-  materials?: string[];
-  ar_materials?: string[];
+  ar_name: string;
+  slug: string;
   isActive: boolean;
+  image: string;
 }
 
-/* ---------- pretty pill helper + chip ---------- */
-const pill = (bg: string, fg: string, border: string) => ({
-  bgcolor: bg,
-  color: fg,
-  border: `1px solid ${border}`,
-  fontWeight: 700,
-  height: 26,
-  borderRadius: 999,
-  '& .MuiChip-icon': { fontSize: 16, mr: 0.5, color: fg },
-  '& .MuiChip-label': { px: 0.75, fontSize: 12, letterSpacing: 0.2 }
-});
+export default function PackagingTable() {
+  const router = useRouter();
+  const [search, setSearch] = React.useState('');
+  const [status, setStatus] = React.useState('all');
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [pkgToDelete, setPkgToDelete] = React.useState<Packaging | null>(null);
 
-const ActiveChip: React.FC<{ value: boolean }> = ({ value }) =>
-  value ? (
-    <Chip size="small" icon={<CheckCircleIcon />} label="Active" sx={pill('rgba(16,185,129,0.18)', '#86efac', 'rgba(16,185,129,0.45)')} />
-  ) : (
-    <Chip size="small" icon={<CancelIcon />} label="Inactive" sx={pill('rgba(239,68,68,0.18)', '#fca5a5', 'rgba(239,68,68,0.45)')} />
-  );
+  const { data: packaging, isLoading } = usePackaging();
+  const delMutation = useDeletePackaging();
 
-export default function ViewPackaging() {
-  const navigate = useNavigate();
+  const filteredData = React.useMemo(() => {
+    if (!packaging?.rows) return [];
+    return packaging.rows.filter((row: Packaging) => {
+        const matchesSearch = row.name.toLowerCase().includes(search.toLowerCase()) || 
+                            row.ar_name.toLowerCase().includes(search.toLowerCase());
+        const matchesStatus = status === 'all' || 
+                             (status === 'active' && row.isActive) || 
+                             (status === 'inactive' && !row.isActive);
+        return matchesSearch && matchesStatus;
+    });
+  }, [packaging, search, status]);
 
-  const [confirm, setConfirm] = React.useState<{ open: boolean, id: string | null, name: string }>({ open: false, id: null, name: '' });
-
-  const { data, isLoading } = usePackaging();
-  const { mutateAsync: deletePackaging, isPending: deletePackagingPending } = useDeletePackaging();
-
-  const openConfirm = (row: PackagingRow) => setConfirm({ open: true, id: (row.id ?? row._id) || null, name: row.name });
-  const closeConfirm = () => setConfirm({ open: false, id: null, name: '' });
-
-  const handleConfirmDelete = async () => {
-    if (confirm.id == null) return;
-    try {
-      await deletePackaging(confirm.id);
-    } finally {
-      closeConfirm();
+  const handleDelete = async () => {
+    if (pkgToDelete) {
+      await delMutation.mutateAsync(pkgToDelete.id);
+      setDeleteDialogOpen(false);
+      setPkgToDelete(null);
     }
   };
 
-  const columns: GridColDef<PackagingRow>[] = [
-    { field: 'name', headerName: 'Name', width: 250 },
-    { field: 'ar_name', headerName: 'Name (Arabic)', width: 250 },
-    { field: 'slug', headerName: 'Slug', width: 250 },
-    {
-      field: 'materials',
-      headerName: 'Materials',
-      width: 250,
-      renderCell: (params: GridRenderCellParams<PackagingRow>) => (params?.row?.materials || []).join(', ')
-    },
-    {
-      field: 'ar_materials',
-      headerName: 'Materials (Arabic)',
-      width: 250,
-      renderCell: (params: GridRenderCellParams<PackagingRow>) => (params?.row?.ar_materials || []).join(', ')
-    },
-
-    // ---- Active/Inactive badge ----
-    {
-      field: 'isActive',
-      headerName: 'Active',
-      flex: 1,
-      minWidth: 220,
-      sortable: true,
-      renderCell: (params: GridRenderCellParams<PackagingRow>) => <ActiveChip value={params.value} />
-    },
-
-    {
-      field: 'actions',
-      headerName: 'Actions',
-      width: 150,
-      sortable: false,
-      filterable: false,
-      disableColumnMenu: true,
-      headerAlign: 'center',
-      align: 'center',
-      renderCell: (params: GridRenderCellParams<PackagingRow>) => (
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            width: '100%',
-            gap: 0.5
-          }}
-        >
-          <Tooltip title="Edit">
-            <IconButton size="small" onClick={() => navigate(`/packaging/edit/${params.row.id ?? params.row._id}`)}>
-              <EditIcon fontSize="small" sx={{ color: '#fff' }} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Delete">
-            <IconButton size="small" color="error" onClick={() => openConfirm(params.row)} disabled={deletePackagingPending}>
-              <DeleteIcon fontSize="small" sx={{ color: 'red' }} />
-            </IconButton>
-          </Tooltip>
-        </Box>
-      )
-    }
-  ];
+  const getStatusBadge = (isActive: boolean) => {
+    if (isActive) return <Badge className="bg-emerald-100 text-emerald-700 border-none hover:bg-emerald-100 flex gap-1 w-fit"><CheckCircle className="h-3 w-3" /> Active</Badge>;
+    return <Badge className="bg-rose-100 text-rose-700 border-none hover:bg-rose-100 flex gap-1 w-fit"><XCircle className="h-3 w-3" /> Inactive</Badge>;
+  };
 
   return (
-    <Box sx={{ width: '100%' }}>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '1rem'
-        }}
-      >
-        <h4
-          style={{
-            color: '#fff',
-            fontSize: '24px',
-            fontWeight: '600',
-            marginBottom: '1rem'
-          }}
-        >
-          Packaging
-        </h4>
-        <Button isLink href="/packaging/add" isStartIcon startIcon={<IoBag />} variant="primary" color="primary">
-          Add Packaging
-        </Button>
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="w-full flex justify-center mb-[-20px]">
+          <ParticleTextEffect words={["Packaging", "Styles"]} />
       </div>
 
-      <DataGrid
-        rows={data?.rows ?? []}
-        columns={columns}
-        getRowId={(r) => r.id ?? r._id ?? ''}
-        pagination
-        initialState={{ pagination: { paginationModel: { pageSize: 12 } } }}
-        pageSizeOptions={[12]}
-        checkboxSelection
-        disableRowSelectionOnClick
-        autoHeight
-        loading={isLoading}
-        // 👇 hamara dark glass pagination
-        slots={{ pagination: TablePagination }}
-        sx={{
-          border: "1px solid rgba(255,255,255,0.08)",
-          color: "#e5e7eb",
-          "& .MuiDataGrid-columnHeaders": {
-            backgroundColor: "rgba(255,255,255,0.03)",
-            borderBottom: "1px solid rgba(255,255,255,0.08)",
-            color: "#cbd5e1",
-          },
-          "& .MuiDataGrid-cell": { borderColor: "rgba(255,255,255,0.06)" },
-          "& .MuiDataGrid-row:nth-of-type(odd)": {
-            backgroundColor: "rgba(255,255,255,0.02)",
-          },
-          "& .MuiDataGrid-row--borderBottom": {
-            borderBottom: "1px solid rgba(255,255,255,0.04)",
-          },
-          "& .MuiDataGrid-row.blocked": {
-            background:
-              "linear-gradient(90deg, rgba(239,68,68,0.06), rgba(239,68,68,0.0))",
-          },
-          "& .MuiDataGrid-virtualScroller": { overflowX: "hidden" },
-          '& .MuiDataGrid-footerContainer': {
-            borderTop: 'none',
-            bgcolor: 'transparent',
-            minHeight: 64
-          }
-        }}
-      />
+      <Card className="border-none shadow-md bg-white overflow-hidden">
+        <CardHeader className="p-6 border-b bg-neutral-50/50">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="relative w-full md:w-96 group">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400 group-focus-within:text-primary transition-colors" />
+                    <Input
+                        placeholder="Search packaging..."
+                        className="pl-10 bg-white border-neutral-200 focus-visible:ring-primary/20 transition-all rounded-xl"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
+                </div>
 
-      {/* Confirm Delete Dialog */}
-      <Dialog open={confirm.open} onClose={deletePackagingPending ? undefined : closeConfirm}>
-        <DialogTitle>Delete Packaging?</DialogTitle>
-        <DialogContent>
-          Are you sure you want to delete <strong>{confirm.name}</strong>? This action cannot be undone.
+                <div className="flex items-center gap-2">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" className="rounded-xl border-neutral-200 flex gap-2">
+                            <Filter className="h-4 w-4 text-neutral-400" />
+                            Status: {status.charAt(0).toUpperCase() + status.slice(1)}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="rounded-xl">
+                        <DropdownMenuItem onClick={() => setStatus('all')}>All</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setStatus('active')}>Active</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setStatus('inactive')}>Inactive</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button onClick={() => router.push('/packaging/add')} className="bg-primary hover:bg-primary/90 text-white shadow-md transition-all rounded-xl">
+                      <Plus className="mr-2 h-4 w-4" /> Add Packaging
+                    </Button>
+                </div>
+            </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader className="bg-neutral-50/50">
+              <TableRow className="hover:bg-transparent border-neutral-100">
+                <TableHead className="w-[100px] pl-6 py-4 font-semibold text-neutral-600 uppercase text-[10px] tracking-wider">Image</TableHead>
+                <TableHead className="font-semibold text-neutral-600 uppercase text-[10px] tracking-wider">Packaging Name</TableHead>
+                <TableHead className="font-semibold text-neutral-600 uppercase text-[10px] tracking-wider">Slug</TableHead>
+                <TableHead className="font-semibold text-neutral-600 uppercase text-[10px] tracking-wider">Status</TableHead>
+                <TableHead className="font-semibold text-neutral-600 uppercase text-[10px] tracking-wider text-right pr-6">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    {Array.from({ length: 5 }).map((_, j) => (
+                      <TableCell key={j} className="py-8"><div className="h-4 bg-neutral-100 animate-pulse rounded" /></TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : filteredData?.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-64 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2 text-neutral-400">
+                        <Gift className="h-12 w-12 opacity-20" />
+                        <p>No packaging styles found.</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredData.map((pkg: Packaging) => (
+                  <TableRow key={pkg.id} className="hover:bg-neutral-50/50 transition-colors border-neutral-100 group">
+                    <TableCell className="pl-6 py-4">
+                      <div className="h-14 w-14 rounded-xl overflow-hidden border border-neutral-100 shadow-sm bg-neutral-100 flex items-center justify-center">
+                        {pkg.image ? (
+                          <img src={pkg.image} alt="" className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                        ) : (
+                          <Gift className="h-6 w-6 text-neutral-300" />
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-semibold text-neutral-800">
+                      <div>
+                        {pkg.name}
+                        <div className="text-xs text-neutral-400 font-normal">{pkg.ar_name}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <code className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600">
+                        {pkg.slug || 'n/a'}
+                      </code>
+                    </TableCell>
+                    <TableCell>{getStatusBadge(pkg.isActive)}</TableCell>
+                    <TableCell className="text-right pr-6">
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-neutral-400 hover:text-amber-600 hover:bg-amber-100 rounded-lg"
+                                onClick={() => router.push(`/packaging/edit/${pkg.id}`)}
+                            >
+                                <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-neutral-400 hover:text-rose-600 hover:bg-rose-100 rounded-lg"
+                                onClick={() => {
+                                    setPkgToDelete(pkg);
+                                    setDeleteDialogOpen(true);
+                                }}
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
+
+                        <div className="block group-hover:hidden">
+                            <MoreHorizontal className="h-4 w-4 mx-auto text-neutral-300" />
+                        </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="rounded-2xl border-none shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Delete Packaging</DialogTitle>
+            <DialogDescription className="text-neutral-500 pt-2 text-sm leading-relaxed">
+              Are you sure you want to delete <span className="font-bold text-neutral-900">{pkgToDelete?.name}</span>?
+              This action is permanent and cannot be reversed.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0 pt-4">
+            <Button variant="outline" className="rounded-xl border-neutral-200 text-neutral-600 hover:bg-neutral-50" onClick={() => setDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" className="rounded-xl shadow-lg shadow-rose-500/20" onClick={handleDelete} disabled={delMutation.isPending}>
+                {delMutation.isPending ? "Deleting..." : "Confirm Delete"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
-        <DialogActions>
-          <MuiButton onClick={closeConfirm} disabled={deletePackagingPending}>
-            Cancel
-          </MuiButton>
-          <MuiButton onClick={handleConfirmDelete} color="error" variant="contained" disabled={deletePackagingPending}>
-            {deletePackagingPending ? 'Deleting...' : 'Delete'}
-          </MuiButton>
-        </DialogActions>
       </Dialog>
-    </Box>
+    </div>
   );
 }

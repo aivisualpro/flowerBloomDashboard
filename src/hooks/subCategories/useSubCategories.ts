@@ -10,17 +10,17 @@ export function useSubCategories(params = {}) {
     queryFn: () => getSubCategoriesLists(params),
     staleTime: 10 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
-    select: (payload) => {
-      const items = Array.isArray(payload?.data) ? payload.data : [];
+    select: (payload: any) => {
+      const items: any[] = Array.isArray(payload?.data) ? payload.data : [];
 
-      const rows = items.map((it, idx) => ({
+      const rows = items.map((it: any, idx: number) => ({
         id: it._id || it.id || idx,
         name: it.name || "",
         ar_name: it.ar_name || "",
         slug: it.slug || "",
         isActive: it.isActive || "",
         image: it.image || it.imageUrl || "",
-        parent: it?.parent?.name || "",
+        parent: it?.category || null,
       }));
 
       return {

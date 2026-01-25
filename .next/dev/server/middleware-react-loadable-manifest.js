@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{\"app/(dashboard)/page.tsx -> react-apexcharts\":{\"id\":\"app/(dashboard)/page.tsx -> react-apexcharts\",\"files\":[]}}"
+self.__REACT_LOADABLE_MANIFEST="{}"

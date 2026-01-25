@@ -1,6 +1,2 @@
-[00:00:01.854] Server  LOG     ✓ Ready in 1570ms
-[00:02:40.524] Server  LOG     ○ Compiling /subCategories ...
-[00:02:44.167] Browser ERROR   uncaughtError: ReferenceError: _ref is not defined
-[00:02:57.128] Browser ERROR   uncaughtError: ReferenceError: _ref is not defined
-[00:03:04.964] Server  WARN    ⚠ Fast Refresh had to perform a full reload due to a runtime error.
-[00:03:05.656] Server  WARN    ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+[00:00:01.735] Server  LOG     ✓ Ready in 1568ms
+[00:00:11.662] Server  LOG     ○ Compiling /brands/edit/[id] ...

@@ -1,170 +1,243 @@
-import React from 'react';
-import { Box, Container, Typography } from '@mui/material';
-import { Card, CardContent, CardHeader } from '@mui/material';
-import { Grid } from '@mui/material';
-import { TextField, MenuItem } from '@mui/material';
-import { Stack } from '@mui/material';
-import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { Save } from '@mui/icons-material';
-import Btn from '../../../components/Button';
+'use client';
 
-import { useAddColor, useUpdateColor } from '../../../hooks/colors/useColorMutation';
+import React, { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import { Save, ArrowLeft, Loader2, Palette, Droplets } from 'lucide-react';
+
+// API
 import { getColorsById } from '../../../api/colors';
+import { useAddColor, useUpdateColor } from '../../../hooks/colors/useColorMutation';
 
-const MODE_OPTIONS = ['hex', 'rgb'];
+// UI Components
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
-const AddOrEditColors = () => {
-  const navigate = useNavigate();
+interface FormState {
+  name: string;
+  value: string;
+  mode: string;
+  isActive: boolean;
+}
 
-  const [form, setForm] = React.useState({
-    name: '',
-    ar_name: '',
-    value: '',
-    mode: 'hex',
-  });
-
+export default function AddOrEditColors() {
+  const router = useRouter();
   const { id } = useParams();
-  const location = useLocation();
-  const isEdit = location.pathname.includes('/edit');
+  const colorId = Array.isArray(id) ? id[0] : id;
+  const isEdit = Boolean(colorId);
 
-  // ----- detail (edit) -----
-  const { data: detail } = useQuery({
-    queryKey: ['color', id],
-    queryFn: () => getColorsById(id),
-    enabled: isEdit && !!id,
-    select: (doc) => doc || {},
-    refetchOnWindowFocus: false,
+  const [form, setForm] = useState<FormState>({
+    name: '',
+    value: '#000000',
+    mode: 'solid',
+    isActive: true,
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // Fetch color detail if edit
+  const { data: detail, isFetching: isLoadingDetail } = useQuery({
+    queryKey: ['color', colorId],
+    queryFn: () => getColorsById(colorId as string),
+    enabled: isEdit && !!colorId,
+    refetchOnWindowFocus: false
   });
 
-  // hydrate once on edit
-  const hydratedRef = React.useRef(false);
-  React.useEffect(() => { hydratedRef.current = false; }, [id]);
+  const { mutateAsync: addColor, isPending: isAdding } = useAddColor();
+  const { mutateAsync: updateColor, isPending: isUpdating } = useUpdateColor();
 
-  React.useEffect(() => {
-    if (!isEdit || !detail || hydratedRef.current) return;
-    setForm((p) => ({
-      ...p,
-      name: detail?.name || '',
-      ar_name: detail?.ar_name || '',
-      value: detail?.value || '',
-      mode: (detail?.mode || 'hex').toLowerCase(),
-    }));
-    hydratedRef.current = true;
+  /* hydrate edit */
+  useEffect(() => {
+    if (!isEdit || !detail) return;
+    setForm({
+      name: detail.name || '',
+      value: detail.value || '#000000',
+      mode: detail.mode || 'solid',
+      isActive: detail.isActive !== undefined ? detail.isActive : true,
+    });
   }, [isEdit, detail]);
 
-  const { mutateAsync: addMutation, isPending: addPending } = useAddColor();
-  const { mutateAsync: updateMutation, isPending: updatePending } = useUpdateColor();
+  /* setters */
+  const setField = (k: keyof FormState, v: any) => setForm((f) => ({ ...f, [k]: v }));
 
-  const disabled = addPending || updatePending;
-  const title = isEdit ? 'Edit Color' : 'Add Color';
-  const btnLabel = isEdit ? 'Save Changes' : 'Add Color';
+  const validateForm = () => {
+    const errs: Record<string, string> = {};
+    if (!form.name.trim()) errs.name = 'Name is required';
+    if (!form.value.trim()) errs.value = 'Color value is required';
+    return errs;
+  };
 
-  const handleSubmit = async (e) => {
+  const loading = isLoadingDetail || isAdding || isUpdating;
+  
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim()) return;
+    setError(null);
+    setFieldErrors({});
 
-    // ✅ send JSON (server expects JSON)
-    const body = {
-      name: form.name.trim(),
-      ar_name: form.ar_name.trim(),
-      value: form.value.trim(),
-      mode: (form.mode || 'hex').toLowerCase(),
-    };
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      setError('Please fill all required fields.');
+      return;
+    }
 
     try {
+      const payload = {
+        name: form.name.trim(),
+        value: form.value.trim(),
+        mode: form.mode,
+        isActive: form.isActive,
+      };
+
       if (isEdit) {
-        await updateMutation({ id, payload: body });
+        await updateColor({ id: colorId as string, payload: payload });
       } else {
-        await addMutation(body);
-        setForm({ name: '', value: '', mode: 'hex' });
+        await addColor(payload);
       }
-      navigate('/colors', { replace: true });
-    } catch (err) {
-      console.error(err);
+      router.push('/colors');
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err.message || 'Save failed');
     }
   };
 
   return (
-    <Box component="form" onSubmit={handleSubmit} noValidate sx={{ py: '2rem' }}>
-      <Container maxWidth="xl" sx={{ px: { xs: 1, md: 2 } }}>
-        <Typography variant="h5" sx={{ mb: 2 }}>{title}</Typography>
-
-        <Grid container spacing={2}>
-          <Grid item xs={12} style={{ width: '100%' }}>
-            <Card
-              variant="outlined"
-              sx={{ mb: 2, borderRadius: 3, opacity: disabled ? 0.7 : 1, backgroundColor: '#111' }}
+    <div className="min-h-screen bg-slate-50/50 pb-20">
+      <div className="container mx-auto px-4 py-8 md:max-w-4xl">
+        {/* Header */}
+        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 border-neutral-200 text-neutral-800 bg-white shadow-sm hover:bg-neutral-100"
+              onClick={() => router.back()}
             >
-              <CardHeader title="Basics" sx={{ pb: 0 }} />
-              <CardContent>
-                <Grid container spacing={2} alignItems="stretch">
-                  <Grid sx={{ width: '32%' }} item xs={12} md={6}>
-                    <TextField
-                      label="Name *"
-                      fullWidth
-                      required
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+                {isEdit ? 'Edit Color' : 'Create Color'}
+              </h1>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+             <Button
+                variant="default"
+                onClick={handleSubmit}
+                className="min-w-[140px]"
+                disabled={loading}
+              >
+               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+               {isEdit ? 'Save Changes' : 'Create Color'}
+             </Button>
+          </div>
+        </div>
+
+        {error && (
+            <div className="mb-6 rounded-md bg-red-50 p-4 text-sm text-red-600 border border-red-100">
+                {error}
+            </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <div className="space-y-8 lg:col-span-2">
+            {/* BASICS */}
+            <Card className="border-slate-200 shadow-sm">
+              <CardHeader>
+                <CardTitle>Color Definition</CardTitle>
+                <CardDescription>Specify color name and its visual value</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Color Name *</Label>
+                  <Input
+                      id="name"
+                      placeholder="e.g. Royal Blue"
                       value={form.name}
-                      disabled={disabled}
-                      onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                    />
-                  </Grid>
+                      onChange={(e) => setField('name', e.target.value)}
+                      className={fieldErrors.name ? "border-red-500" : ""}
+                  />
+                   {fieldErrors.name && <p className="text-xs text-red-500">{fieldErrors.name}</p>}
+                </div>
 
-                  <Grid sx={{ width: '32%' }} item xs={12} md={6}>
-                    <TextField
-                      label="Name (Arabic) *"
-                      fullWidth
-                      required
-                      value={form.ar_name}
-                      disabled={disabled}
-                      onChange={(e) => setForm((p) => ({ ...p, ar_name: e.target.value }))}
-                    />
-                  </Grid>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div className="space-y-2">
+                        <Label htmlFor="value">Color Value (Hex/RGB) *</Label>
+                        <div className="flex gap-2">
+                            <div 
+                                className="h-10 w-12 rounded-lg border border-neutral-200 shadow-sm" 
+                                style={{ backgroundColor: form.value }}
+                            />
+                            <Input
+                                id="value"
+                                placeholder="#000000"
+                                value={form.value}
+                                onChange={(e) => setField('value', e.target.value)}
+                                className={`font-mono ${fieldErrors.value ? "border-red-500" : ""}`}
+                            />
+                        </div>
+                        {fieldErrors.value && <p className="text-xs text-red-500">{fieldErrors.value}</p>}
+                    </div>
 
-                  {/* Mode as SELECT */}
-                  <Grid sx={{ width: '32%' }} item xs={12} md={6}>
-                    <TextField
-                      label="Mode *"
-                      fullWidth
-                      required
-                      select
-                      value={form.mode || 'hex'}
-                      disabled={disabled}
-                      onChange={(e) => setForm((p) => ({ ...p, mode: e.target.value }))}
-                    >
-                      {MODE_OPTIONS.map((opt) => (
-                        <MenuItem key={opt} value={opt}>
-                          {opt.toUpperCase()}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                  </Grid>
-
-                  <Grid sx={{ width: '32%' }} item xs={12} md={6}>
-                    <TextField
-                      label="Value *"
-                      fullWidth
-                      required
-                      placeholder={form.mode === 'rgb' ? 'e.g. rgb(255, 0, 0)' : 'e.g. #ff0000'}
-                      value={form.value}
-                      disabled={disabled}
-                      onChange={(e) => setForm((p) => ({ ...p, value: e.target.value }))}
-                    />
-                  </Grid>
-                </Grid>
+                    <div className="space-y-2">
+                        <Label htmlFor="mode">Mode</Label>
+                        <Select value={form.mode} onValueChange={(v) => setField('mode', v)}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select mode" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="solid">Solid</SelectItem>
+                                <SelectItem value="gradient">Gradient</SelectItem>
+                                <SelectItem value="metallic">Metallic</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
               </CardContent>
             </Card>
 
-            <Stack direction="row" spacing={1.5}>
-              <Btn type="submit" isStartIcon startIcon={<Save />} variant="contained" color="primary" disabled={disabled}>
-                {btnLabel}
-              </Btn>
-            </Stack>
-          </Grid>
-        </Grid>
-      </Container>
-    </Box>
-  );
-};
+            <div className="flex items-center justify-center p-12 bg-white rounded-2xl border border-dashed border-slate-200">
+                <div 
+                    className="h-32 w-32 rounded-3xl shadow-2xl transition-all duration-500"
+                    style={{ 
+                        backgroundColor: form.value,
+                        boxShadow: `0 20px 50px ${form.value}44`
+                    }}
+                />
+            </div>
+          </div>
 
-export default AddOrEditColors;
+          <div className="space-y-8">
+            <Card className="border-slate-200 shadow-sm">
+                <CardHeader className="pb-4">
+                    <CardTitle className="text-base">Settings</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <Label className="text-base">Active Status</Label>
+                            <p className="text-xs text-muted-foreground">Available for products</p>
+                        </div>
+                        <Switch
+                            checked={form.isActive}
+                            onCheckedChange={(c) => setField('isActive', c)}
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
