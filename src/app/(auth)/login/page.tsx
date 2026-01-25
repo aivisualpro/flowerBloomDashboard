@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import FeatherIcon from 'feather-icons-react';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 export default function SignIn() {
   const router = useRouter();
@@ -21,8 +21,8 @@ export default function SignIn() {
     }
     setLoading(true);
     try {
-      // Accessing the API URL via process.env for Next.js
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+      // Use relative path for internal Next.js API routes
+      const API_URL = '/api';
       const res = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -76,7 +76,7 @@ export default function SignIn() {
                 <div className="space-y-4">
                     <div className="relative group">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500 group-focus-within:text-cyan-400 transition-colors">
-                            <FeatherIcon icon="mail" size={18} />
+                            <Mail size={18} />
                         </div>
                         <input
                             type="email"
@@ -90,7 +90,7 @@ export default function SignIn() {
 
                     <div className="relative group">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500 group-focus-within:text-cyan-400 transition-colors">
-                            <FeatherIcon icon="lock" size={18} />
+                            <Lock size={18} />
                         </div>
                         <input
                             type={showPwd ? 'text' : 'password'}
@@ -105,7 +105,7 @@ export default function SignIn() {
                             onClick={() => setShowPwd(!showPwd)}
                             className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-500 hover:text-neutral-300 transition-colors"
                         >
-                            <FeatherIcon icon={showPwd ? 'eye-off' : 'eye'} size={18} />
+                            {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
                     </div>
                 </div>
