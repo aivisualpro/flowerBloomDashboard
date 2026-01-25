@@ -1,7 +1,13 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
+  "/api/analytics/sales/route": "app/api/analytics/sales/route.js",
+  "/api/analytics/customer-reviews/route": "app/api/analytics/customer-reviews/route.js",
+  "/api/analytics/current-year-order/route": "app/api/analytics/current-year-order/route.js",
+  "/api/analytics/overview/route": "app/api/analytics/overview/route.js",
+  "/api/analytics/counts/route": "app/api/analytics/counts/route.js",
+  "/api/orders/lists/route": "app/api/orders/lists/route.js",
   "/(dashboard)/orders/[id]/page": "app/(dashboard)/orders/[id]/page.js",
+  "/(dashboard)/page": "app/(dashboard)/page.js",
+  "/(dashboard)/subCategories/page": "app/(dashboard)/subCategories/page.js",
   "/(dashboard)/orders/page": "app/(dashboard)/orders/page.js",
-  "/(dashboard)/categories/page": "app/(dashboard)/categories/page.js",
-  "/(dashboard)/categories/edit/[id]/page": "app/(dashboard)/categories/edit/[id]/page.js"
+  "/(dashboard)/categories/page": "app/(dashboard)/categories/page.js"
 }

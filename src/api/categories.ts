@@ -13,8 +13,8 @@ export async function getCategoriesLists(params: any = {}) {
 
 // ---- 2) DETAIL ----
 export async function getCategoryById(id: string) {
-  const res = await axios.get(`${BASE}/category/lists/${id}`);
-  return res.data?.data ?? res.data ?? {};
+  const res = await axios.get(`${BASE}/category/lists`, { params: { id } });
+  return res.data;
 }
 
 // ---- 3) CREATE ----

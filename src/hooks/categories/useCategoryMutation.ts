@@ -19,12 +19,12 @@ interface UpdateCategoryPayload {
   formData: FormData;
 }
 
-export function useUpdateCategory(id: string, params = {}) {
+export function useUpdateCategory() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, formData }: UpdateCategoryPayload) => updateCategory(id, formData),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: categoriesKey(params) });
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: categoriesKey() });
       qc.invalidateQueries({ queryKey: ["category", id] });
     },
   });

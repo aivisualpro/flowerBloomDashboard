@@ -1,5 +1,7 @@
 'use client';
 
+import AddOrEditCategory from '@/views/ui-elements/categories/AddOrEditCategory';
+
 export default function EditCategoryPage() {
-  return <div>Edit Category Page - Coming Soon</div>;
+  return <AddOrEditCategory />;
 }

@@ -1,0 +1,7 @@
+'use client';
+
+import AddOrEditSubCategories from '../../../../views/ui-elements/sub categories/AddOrEditSubCategories';
+
+export default function AddSubCategoryPage() {
+  return <AddOrEditSubCategories />;
+}

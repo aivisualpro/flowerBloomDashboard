@@ -1,256 +1,294 @@
-import React from 'react';
-import {
-  Box,
-  Container,
-  Typography,
-  Grid,
-  Card,
-  CardHeader,
-  CardContent,
-  TextField,
-  Stack,
-  IconButton,
-  Button as MuiButton,
-  Snackbar,
-  Alert
-} from '@mui/material';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import { Save } from '@mui/icons-material';
-import { useParams, usePathname, useRouter } from 'next/navigation';
+'use client';
+import React, { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import { Save, Trash2, ArrowLeft, Upload, Loader2 } from 'lucide-react';
 
-import Btn from '../../../components/Button'; // your wrapper button
+// API
 import { getCategoryById } from '../../../api/categories';
 import { useAddCategory, useUpdateCategory } from '../../../hooks/categories/useCategoryMutation';
 
-const AddOrEditCategory = () => {
-  const router = useRouter();
-  const params = useParams();
-  const id = params?.id as string;
-  const pathname = usePathname();
-  const isEdit = pathname.includes('/edit');
+// UI Components
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 
-  const [form, setForm] = React.useState<{
-    name: string;
-    ar_name: string;
-    image: File | null;
-    imagePreview: string;
-  }>({
+interface FormState {
+  name: string;
+  ar_name: string;
+  slug: string;
+  image: string;
+  imageFile: File | null;
+  isActive: boolean;
+}
+
+export default function AddOrEditCategory() {
+  const router = useRouter();
+  const { id } = useParams();
+  const categoryId = Array.isArray(id) ? id[0] : id;
+  const isEdit = Boolean(categoryId);
+
+  const [form, setForm] = useState<FormState>({
     name: '',
     ar_name: '',
-    image: null,
-    imagePreview: ''
+    slug: '',
+    image: '',
+    imageFile: null,
+    isActive: true,
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const { data: detail, isFetching: isLoadingDetail } = useQuery({
+    queryKey: ['category', categoryId],
+    queryFn: () => getCategoryById(categoryId as string),
+    enabled: isEdit && !!categoryId,
+    select: (doc: any) => doc?.data?.[0] || {},
+    refetchOnWindowFocus: false
   });
 
-  // toast
-  const [toast, setToast] = React.useState({ open: false, type: 'success', msg: '' });
-  const showToast = (msg: string, type = 'success') => setToast({ open: true, type, msg });
+  const { mutateAsync: addCategory, isPending: isAdding } = useAddCategory();
+  const { mutateAsync: updateCategory, isPending: isUpdating } = useUpdateCategory();
 
-  // Detail (only in edit)
-  const { data: detail, isLoading: loadingDetail } = useQuery({
-    queryKey: ['category', id],
-    queryFn: () => getCategoryById(id as string),
-    enabled: isEdit && !!id,
-    select: (doc: any) => doc || {} // because API now returns the doc itself
-  });
+  /* hydrate edit */
+  useEffect(() => {
+    if (!isEdit || !detail) return;
+    const c = detail;
+    setForm({
+      name: c.name || '',
+      ar_name: c.ar_name || '',
+      slug: c.slug || '',
+      image: c.image || '',
+      imageFile: null,
+      isActive: !!c.isActive,
+    });
+  }, [isEdit, detail]);
 
-  React.useEffect(() => {
-    if (!isEdit || !detail || loadingDetail) return;
-    setForm((prev) => ({
-      ...prev,
-      name: detail.name || '',
-      ar_name: detail.ar_name || '',
-      image: null, // new file none
-      imagePreview: detail.image || detail.imageUrl || ''
-    }));
-  }, [isEdit, detail, loadingDetail]);
+  /* setters */
+  const setField = (k: keyof FormState, v: any) => setForm((f) => ({ ...f, [k]: v }));
 
-  const setField = (k: string, v: any) => setForm((p) => ({ ...p, [k]: v }));
-
-  // blob management
-  const lastBlobRef = React.useRef<string | null>(null);
-  const revokeIfBlob = (url: string | null) => {
-    if (url?.startsWith('blob:')) {
-      try {
-        URL.revokeObjectURL(url);
-      } catch {}
-    }
-  };
-
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      showToast('Please choose an image file.', 'error');
-      return;
-    }
-    if (lastBlobRef.current) revokeIfBlob(lastBlobRef.current);
-    const blob = URL.createObjectURL(file);
-    lastBlobRef.current = blob;
-    setForm((p) => ({ ...p, image: file, imagePreview: blob }));
+    setField('image', URL.createObjectURL(file));
+    setField('imageFile', file);
   };
 
-  const clearImage = () => {
-    if (form.imagePreview?.startsWith('blob:')) revokeIfBlob(form.imagePreview);
-    lastBlobRef.current = null;
-    setForm((p) => ({ ...p, image: null, imagePreview: '' }));
+  const validateForm = () => {
+    const errs: Record<string, string> = {};
+    if (!form.name.trim()) errs.name = 'Name is required';
+    if (!form.ar_name.trim()) errs.ar_name = 'Arabic name is required';
+    if (!form.slug.trim()) errs.slug = 'Slug is required';
+    return errs;
   };
 
-  // Mutations
-  const addMutation = useAddCategory();
-  const updateMutation = useUpdateCategory(id);
-
-  const saving = addMutation.isPending || updateMutation.isPending;
-  const disabled = saving || loadingDetail;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.name.trim()) {
-      showToast('Name is required.', 'error');
-      return;
-    }
-
+  const buildFormData = () => {
     const fd = new FormData();
     fd.append('name', form.name.trim());
     fd.append('ar_name', form.ar_name.trim());
-    if (form.image) fd.append('image', form.image); // only send if new file picked
+    fd.append('slug', form.slug.trim());
+    fd.append('isActive', String(!!form.isActive));
+    if (form.imageFile) {
+      fd.append('image', form.imageFile);
+    } else if (form.image) {
+      fd.append('image', form.image);
+    }
+    return fd;
+  };
+
+  const loading = isLoadingDetail || isAdding || isUpdating;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setFieldErrors({});
+
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
+      setError('Please fill all required fields.');
+      return;
+    }
 
     try {
-      if (isEdit) {
-        await updateMutation.mutateAsync({ id, formData: fd });
-        showToast('Category updated successfully.');
-      } else {
-        await addMutation.mutateAsync(fd);
-        showToast('Category created successfully.');
-        // reset after add
-        if (lastBlobRef.current) revokeIfBlob(lastBlobRef.current);
-        lastBlobRef.current = null;
-        setForm({ name: '', ar_name: '', image: null, imagePreview: '' });
-      }
-
-      setTimeout(() => router.push('/categories'), 350);
+      setSaving(true);
+      const formData = buildFormData();
+      if (isEdit) await updateCategory({ id: categoryId as string, formData });
+      else await addCategory(formData);
+      router.push('/categories');
     } catch (err: any) {
-      console.error(err);
-      const msg = err?.response?.data?.message || 'Failed to save category.';
-      showToast(msg, 'error');
+      setError(err?.response?.data?.message || err.message || 'Save failed');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const title = isEdit ? 'Edit Category' : 'Add Category';
-  const btnLabel = isEdit ? 'Save Changes' : 'Add Category';
-
   return (
-    <>
-      <Box component="form" onSubmit={handleSubmit} noValidate sx={{ py: '2rem' }}>
-        <Container maxWidth="xl" sx={{ px: { xs: 1, md: 2 } }}>
-          <Typography variant="h5" sx={{ mb: 2 }}>
-            {title}
-          </Typography>
+    <div className="min-h-screen bg-slate-50/50 pb-20">
+      <div className="container mx-auto px-4 py-8 md:max-w-4xl">
+        {/* Header */}
+        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 border-neutral-200 text-neutral-800 bg-white shadow-sm hover:bg-neutral-100"
+              onClick={() => router.back()}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+                {isEdit ? 'Edit Category' : 'Create Category'}
+              </h1>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+             <Button
+                variant="default"
+                onClick={handleSubmit}
+                className="min-w-[140px]"
+                disabled={loading || saving}
+              >
+               {(loading || saving) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+               {isEdit ? 'Save Changes' : 'Create Category'}
+             </Button>
+          </div>
+        </div>
 
-          <Grid size={12}>
-            <Card variant="outlined" sx={{ mb: 2, borderRadius: 3, opacity: disabled ? 0.7 : 1, backgroundColor: '#111' }}>
-              <CardHeader title="Basics" sx={{ pb: 0 }} />
-              <CardContent>
-                <Grid container spacing={2}>
-                  <div className="d-flex" style={{ gap: 10 }}>
-                    <div className="text_field" style={{ width: '50%' }}>
-                      <TextField
-                        label="Name *"
-                        fullWidth
-                        required
+        {error && (
+            <div className="mb-6 rounded-md bg-red-50 p-4 text-sm text-red-600 border border-red-100">
+                {error}
+            </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          {/* LEFT COLUMN - MAIN CONTENT */}
+          <div className="space-y-8 lg:col-span-2">
+
+            {/* BASICS */}
+            <Card className="border-slate-200 shadow-sm">
+              <CardHeader>
+                <CardTitle>Basic Information</CardTitle>
+                <CardDescription>Category name and details</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Name (English) *</Label>
+                    <Input
+                        id="name"
+                        placeholder="e.g. Cookies"
                         value={form.name}
-                        disabled={disabled}
                         onChange={(e) => setField('name', e.target.value)}
-                      />
-                    </div>
-                    <div className="text_field" style={{ width: '50%' }}>
-                      <TextField
-                        label="Name (Arabic) *"
-                        fullWidth
-                        required
+                        className={fieldErrors.name ? "border-red-500" : ""}
+                    />
+                     {fieldErrors.name && <p className="text-xs text-red-500">{fieldErrors.name}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ar_name" className="text-right block w-full">الاسم (عربي) *</Label>
+                    <Input
+                        id="ar_name"
+                        dir="rtl"
+                        placeholder="مثال: كوكيز"
                         value={form.ar_name}
-                        disabled={disabled}
                         onChange={(e) => setField('ar_name', e.target.value)}
-                      />
-                    </div>
+                         className={fieldErrors.ar_name ? "border-red-500 text-right" : "text-right"}
+                    />
+                    {fieldErrors.ar_name && <p className="text-xs text-red-500 text-right">{fieldErrors.ar_name}</p>}
                   </div>
+                </div>
 
-                  <div className="mt-4">
-                    <Stack spacing={1.2}>
-                      <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                        Image *
-                      </Typography>
-
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <MuiButton variant="outlined" startIcon={<CloudUploadIcon />} component="label" disabled={disabled}>
-                          Upload Image
-                          <input type="file" accept="image/*" hidden onChange={onFileChange} />
-                        </MuiButton>
-
-                        {(form.image || form.imagePreview) && (
-                          <IconButton aria-label="clear image" onClick={clearImage} disabled={disabled}>
-                            <DeleteOutlineIcon />
-                          </IconButton>
-                        )}
-                      </Stack>
-
-                      <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                        {form.image ? form.image.name : form.imagePreview ? 'Using existing image' : 'No file selected'}
-                      </Typography>
-
-                      {form.imagePreview ? (
-                        <Box
-                          sx={{
-                            mt: 1,
-                            width: 140,
-                            height: 140,
-                            borderRadius: 2,
-                            overflow: 'hidden',
-                            border: '1px dashed rgba(255,255,255,0.2)'
-                          }}
-                        >
-                          <img
-                            src={form.imagePreview}
-                            alt="preview"
-                            style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }}
-                          />
-                        </Box>
-                      ) : null}
-                    </Stack>
-                  </div>
-                </Grid>
+                <div className="space-y-2">
+                    <Label htmlFor="slug">Slug *</Label>
+                    <Input
+                        id="slug"
+                        placeholder="cookies"
+                        value={form.slug}
+                        onChange={(e) => setField('slug', e.target.value)}
+                        className={`font-mono ${fieldErrors.slug ? "border-red-500" : ""}`}
+                    />
+                    {fieldErrors.slug && <p className="text-xs text-red-500">{fieldErrors.slug}</p>}
+                </div>
               </CardContent>
             </Card>
 
-            <Stack direction="row" spacing={1.5}>
-              <Btn type="submit" isStartIcon startIcon={<Save />} variant="primary" color="primary" disabled={disabled}>
-                {btnLabel}
-              </Btn>
-              <MuiButton variant="outlined" disabled={disabled} onClick={() => router.push('/categories')}>
-                Cancel
-              </MuiButton>
-            </Stack>
-          </Grid>
-        </Container>
-      </Box>
+            {/* MEDIA */}
+            <Card className="border-slate-200 shadow-sm">
+              <CardHeader>
+                <CardTitle>Image</CardTitle>
+                <CardDescription>Category image</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-3">
+                    <Label>Category Image</Label>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                        {form.image ? (
+                            <div className="relative h-40 w-40 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                                <img src={form.image} alt="Category" className="h-full w-full object-cover" />
+                                <Button
+                                    size="icon"
+                                    variant="destructive"
+                                    className="absolute top-2 right-2 h-6 w-6"
+                                    onClick={() => setForm(f => ({...f, image: '', imageFile: null}))}
+                                >
+                                    <Trash2 className="h-3 w-3" />
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="flex h-40 w-40 items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400">
+                                <span className="text-xs">No image</span>
+                            </div>
+                        )}
+                        <div className="flex flex-col gap-2">
+                            <Input
+                                id="image-upload"
+                                type="file"
+                                className="hidden"
+                                accept="image/*"
+                                onChange={onImageSelect}
+                            />
+                            <Label htmlFor="image-upload">
+                                <div className="inline-flex h-9 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground cursor-pointer">
+                                    <Upload className="mr-2 h-4 w-4" /> Upload Image
+                                </div>
+                            </Label>
+                            <p className="text-xs text-muted-foreground">Recommended size: 400x400px</p>
+                        </div>
+                    </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-      <Snackbar
-        open={toast.open}
-        autoHideDuration={2500}
-        onClose={() => setToast((t) => ({ ...t, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert
-          onClose={() => setToast((t) => ({ ...t, open: false }))}
-          severity={toast.type === 'error' ? 'error' : 'success'}
-          sx={{ width: '100%' }}
-        >
-          {toast.msg}
-        </Alert>
-      </Snackbar>
-    </>
+          {/* RIGHT COLUMN - SIDEBAR */}
+          <div className="space-y-8">
+
+            {/* SETTINGS */}
+            <Card className="border-slate-200 shadow-sm">
+                <CardHeader className="pb-4">
+                    <CardTitle className="text-base">Settings</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <Label className="text-base">Active Status</Label>
+                            <p className="text-xs text-muted-foreground">Category visibility</p>
+                        </div>
+                        <Switch
+                            checked={form.isActive}
+                            onCheckedChange={(c) => setField('isActive', c)}
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+
+          </div>
+        </div>
+      </div>
+    </div>
   );
-};
-
-export default AddOrEditCategory;
+}

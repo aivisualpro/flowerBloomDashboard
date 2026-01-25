@@ -173,6 +173,33 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../../src/app/(dashboard)/subCategories/add/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/subCategories/add">> = Specific
+  const handler = {} as typeof import("../../../src/app/(dashboard)/subCategories/add/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/(dashboard)/subCategories/edit/[id]/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/subCategories/edit/[id]">> = Specific
+  const handler = {} as typeof import("../../../src/app/(dashboard)/subCategories/edit/[id]/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/(dashboard)/subCategories/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/subCategories">> = Specific
+  const handler = {} as typeof import("../../../src/app/(dashboard)/subCategories/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../../src/app/api/analytics/counts/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/analytics/counts">> = Specific

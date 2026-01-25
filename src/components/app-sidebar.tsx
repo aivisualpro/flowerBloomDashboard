@@ -66,10 +66,11 @@ const data = {
       title: "Categories",
       url: "/categories",
       icon: Layers,
-      items: [
-        { title: "Main Categories", url: "/categories" },
-        { title: "Sub Categories", url: "/subCategories" },
-      ],
+    },
+    {
+      title: "Sub Categories",
+      url: "/subCategories",
+      icon: Layers,
     },
     {
       title: "Brands",
@@ -148,7 +149,7 @@ export function AppSidebar() {
                   <SidebarMenuButton 
                     asChild 
                     tooltip={item.title}
-                    isActive={pathname === item.url}
+                    isActive={pathname === item.url || pathname.startsWith(item.url + '/')}
                   >
                     <Link href={item.url}>
                       <item.icon className="h-4 w-4" />

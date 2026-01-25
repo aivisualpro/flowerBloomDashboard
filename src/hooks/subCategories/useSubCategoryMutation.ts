@@ -1,4 +1,4 @@
-// src/hooks/categories/useCategoryMutations.js
+// src/hooks/subCategories/useSubCategoryMutation.ts
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createSubCategory, updateSubCategory, deleteSubCategory } from "../../api/subCategories";
 
@@ -14,13 +14,13 @@ export function useAddSubCategory(params = {}) {
   });
 }
 
-export function useUpdateSubCategory(id: string, params = {}) {
+export function useUpdateSubCategory(params = {}) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, formData }: { id: string, formData: any }) => updateSubCategory(id, formData),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: categoriesKey(params) });
-      qc.invalidateQueries({ queryKey: ["subCategory", id] });
+      qc.invalidateQueries({ queryKey: ["subCategory", variables.id] });
     },
   });
 }
