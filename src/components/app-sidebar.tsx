@@ -171,12 +171,14 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="border-t p-4">
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-full bg-neutral-200" />
-          <div className="flex flex-col">
-            <span className="text-sm font-medium">Admin User</span>
-            <span className="text-xs text-neutral-500">admin@crunchy.com</span>
-          </div>
+        <div 
+          className="flex items-center justify-center gap-3 cursor-pointer text-red-500 hover:text-red-600 transition-colors"
+          onClick={() => {
+            localStorage.removeItem('admin');
+            window.location.href = '/login';
+          }}
+        >
+          <span className="text-sm font-medium">(Logout)</span>
         </div>
       </SidebarFooter>
     </Sidebar>
