@@ -21,7 +21,22 @@ export async function POST(request: Request) {
         password: hashedPassword,
         role: 'admin'
       });
-      
+
+      const token = jwt.sign(
+        { id: newUser._id, role: newUser.role },
+        process.env.JWT_SECRET || 'secret',
+        { expiresIn: '1d' }
+      );
+
+      return NextResponse.json({
+        success: true,
+        token,
+        data: {
+          id: newUser._id,
+          email: newUser.email,
+          role: newUser.role
+        }
+      });
     }
 
     const user = await User.findOne({ email });

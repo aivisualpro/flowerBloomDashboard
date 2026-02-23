@@ -1,4 +1,4 @@
-// src/api/categories.js
+// src/api/products.ts
 import axios from "axios";
 
 // Build base once (no shared api instance)
