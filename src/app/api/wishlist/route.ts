@@ -4,6 +4,16 @@ import { Wishlist } from '@/models';
 import { verifyCustomerToken } from '@/lib/auth';
 import '@/models';
 
+// Helper to get user ID from either JWT or body
+async function getUserId(req: NextRequest, body?: any): Promise<string | null> {
+  // Try JWT first
+  const auth = verifyCustomerToken(req);
+  if (auth) return auth.id;
+  // Fall back to body.user (website pattern)
+  if (body?.user) return body.user;
+  return null;
+}
+
 // GET /api/wishlist — Get customer's wishlist
 export async function GET(req: NextRequest) {
   try {
@@ -33,24 +43,26 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/wishlist — Toggle product in wishlist (add if not present, remove if present)
+// POST /api/wishlist — Add product to wishlist
+// Supports both JWT auth ({ productId }) and website pattern ({ user, product })
 export async function POST(req: NextRequest) {
   try {
-    const auth = verifyCustomerToken(req);
-    if (!auth) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    }
-
     await connectDB();
-    const { productId } = await req.json();
+    const body = await req.json();
+    const userId = await getUserId(req, body);
+    const productId = body.productId || body.product;
+
+    if (!userId) {
+      return NextResponse.json({ success: false, message: 'User identification required' }, { status: 401 });
+    }
 
     if (!productId) {
       return NextResponse.json({ success: false, message: 'Product ID is required' }, { status: 400 });
     }
 
-    let wishlist = await Wishlist.findOne({ customer: auth.id });
+    let wishlist = await Wishlist.findOne({ customer: userId });
     if (!wishlist) {
-      wishlist = new Wishlist({ customer: auth.id, products: [] });
+      wishlist = new Wishlist({ customer: userId, products: [] });
     }
 
     const productIndex = wishlist.products.findIndex(
@@ -59,18 +71,15 @@ export async function POST(req: NextRequest) {
 
     let action: string;
     if (productIndex > -1) {
-      // Remove from wishlist
       wishlist.products.splice(productIndex, 1);
       action = 'removed';
     } else {
-      // Add to wishlist
       wishlist.products.push(productId);
       action = 'added';
     }
 
     await wishlist.save();
 
-    // Re-populate for response
     await wishlist.populate({
       path: 'products',
       populate: [
@@ -86,20 +95,30 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// DELETE /api/wishlist — Remove specific product or clear all
+// DELETE /api/wishlist — Remove product from wishlist
+// Supports JWT auth (query params) and website pattern (body: { user, product })
 export async function DELETE(req: NextRequest) {
   try {
-    const auth = verifyCustomerToken(req);
-    if (!auth) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    await connectDB();
+
+    // Try reading body for website pattern
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {
+      // No body — use query params
     }
 
-    await connectDB();
+    const userId = await getUserId(req, body);
+    if (!userId) {
+      return NextResponse.json({ success: false, message: 'User identification required' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
-    const productId = searchParams.get('productId');
+    const productId = searchParams.get('productId') || body.product;
     const clearAll = searchParams.get('clearAll');
 
-    const wishlist = await Wishlist.findOne({ customer: auth.id });
+    const wishlist = await Wishlist.findOne({ customer: userId });
     if (!wishlist) {
       return NextResponse.json({ success: false, message: 'Wishlist not found' }, { status: 404 });
     }
