@@ -9,6 +9,10 @@ import Color from './Color';
 import Packaging from './Packaging';
 import CategoryType from './CategoryType';
 import SubCategory from './SubCategory';
+import Customer from './Customer';
+import Cart from './Cart';
+import Wishlist from './Wishlist';
+import Coupon from './Coupon';
 
 export {
   User,
@@ -21,5 +25,9 @@ export {
   Color,
   Packaging,
   CategoryType,
-  SubCategory
+  SubCategory,
+  Customer,
+  Cart,
+  Wishlist,
+  Coupon
 };
