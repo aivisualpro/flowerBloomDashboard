@@ -73,13 +73,15 @@
 
 /* Quill Editor Overrides */
 .ql-container,
+.ql-container.ql-snow,
 .ql-editor {
   background: #ffffff !important;
   color: #1a1a1a !important;
+  font-family: 'Inter', 'Noto Naskh Arabic', sans-serif !important;
   font-size: 0.875rem;
 }
 
-/* Force white bg and dark text on ALL nested elements (overrides inline styles from pasted content) */
+/* Force white bg, dark text, and consistent font on ALL nested elements */
 .ql-editor *,
 .ql-editor p,
 .ql-editor span,
@@ -97,14 +99,17 @@
   color: #1a1a1a !important;
   background-color: transparent !important;
   background: transparent !important;
+  font-family: inherit !important;
 }
 
-.ql-toolbar {
+.ql-toolbar,
+.ql-toolbar.ql-snow {
   background: #fafafa !important;
   border-color: #e5e5e5 !important;
 }
 
-.ql-container {
+.ql-container,
+.ql-container.ql-snow {
   border-color: #e5e5e5 !important;
 }
 

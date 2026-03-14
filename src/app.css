@@ -1,19 +1,20 @@
 /* ===== Fonts ===== */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Noto+Naskh+Arabic:wght@400..700&display=swap');
 
 :root {
   --brand-teal: #0fb4bb;
   --brand-teal-dark: #0a9196;
+  --font-arabic: 'Noto Naskh Arabic', serif;
 }
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Noto Naskh Arabic', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 h1, .font-audiowide {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Noto Naskh Arabic', sans-serif;
 }
 
 /* Custom button hover effects */
