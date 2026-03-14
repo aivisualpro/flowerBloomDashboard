@@ -1,6 +1,7 @@
 // hooks/brands/useBrandsMutation.js
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createPackaging, deletePackaging, updatePackaging } from '../../api/packaging';
+import { useDashboardStore } from '../../store/useDashboardStore';
 
 export function useAddPackaging() {
   const qc = useQueryClient();
@@ -9,6 +10,7 @@ export function useAddPackaging() {
     retry: 0,                      // ⬅️ important
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['packaging', 'packaging'] });
+      useDashboardStore.getState().refresh();
     },
   });
 }
@@ -20,6 +22,7 @@ export function useUpdatePackaging() {
     retry: 0,                      // ⬅️ important
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['packaging', 'packaging'] });
+      useDashboardStore.getState().refresh();
     },
   });
 }
@@ -50,6 +53,7 @@ export function useDeletePackaging() {
 
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["packaging"] });
+      useDashboardStore.getState().refresh();
     },
   });
 }

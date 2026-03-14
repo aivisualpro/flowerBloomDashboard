@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createCategoryType, updateCategoryType, deleteCategoryType } from "../../api/categoryTypes";
 import { CategoryType } from "@/types";
+import { useDashboardStore } from '../../store/useDashboardStore';
 
 const categoriesKey = (params = {}) => ["categoryTypes", params];
 
@@ -10,6 +11,7 @@ export function useAddCategoryType(params: any = {}) {
     mutationFn: (payload: any) => createCategoryType(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: categoriesKey(params) });
+      useDashboardStore.getState().refresh();
     },
   });
 }
@@ -21,6 +23,7 @@ export function useUpdateCategoryType(id?: string | string[], params: any = {}) 
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: categoriesKey(params) });
       qc.invalidateQueries({ queryKey: ["categoryType", id] });
+      useDashboardStore.getState().refresh();
     },
   });
 }
@@ -30,6 +33,9 @@ export function useDeleteCategoryType(params: any = {}) {
   return useMutation({
     // id is passed when calling mutate/mutateAsync
     mutationFn: (id: string) => deleteCategoryType(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: categoriesKey(params) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: categoriesKey(params) });
+      useDashboardStore.getState().refresh();
+    },
   });
 }

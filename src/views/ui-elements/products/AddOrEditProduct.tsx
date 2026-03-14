@@ -9,14 +9,8 @@ import 'react-quill-new/dist/quill.snow.css';
 // Hooks
 import { getProductById } from '../../../api/products';
 import { useAddProduct, useUpdateProduct } from '../../../hooks/products/useProductMutation';
-import { useBrands } from '../../../hooks/brands/useBrands';
 import { useProductNames } from '../../../hooks/products/useProducts';
-import { useCategoryTypes } from '../../../hooks/categoryTypes/useCategoryTypes';
-import { useSubCategories } from '../../../hooks/subCategories/useSubCategories';
-import { useOccasions } from '../../../hooks/occasions/useOccasions';
-import { useRecipients } from '../../../hooks/recipients/useRecipients';
-import { useColors } from '../../../hooks/colors/useColors';
-import { usePackaging } from '../../../hooks/packaging/usePackaging';
+import { useDashboardStore } from '../../../store/useDashboardStore';
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -159,33 +153,26 @@ export default function AddOrEditProduct() {
   const { mutateAsync: addProduct, isPending: isAdding } = useAddProduct();
   const { mutateAsync: updateProduct, isPending: isUpdating } = useUpdateProduct();
 
-  // Data Hooks
-  const { data: brandsQ } = useBrands();
-  const { data: typesQ } = useCategoryTypes();
-  const { data: subsQ } = useSubCategories();
-  const { data: occsQ } = useOccasions();
-  const { data: recsQ } = useRecipients();
-  const { data: colsQ } = useColors();
-  const { data: packsQ } = usePackaging();
+  // Data from Dashboard Store (pre-fetched in layout)
+  const brands = useDashboardStore(s => s.brands);
+  const categoryTypes = useDashboardStore(s => s.categoryTypes);
+  const categories = useDashboardStore(s => s.categories);
+  const occasions = useDashboardStore(s => s.occasions);
+  const recipients = useDashboardStore(s => s.recipients);
+  const colors = useDashboardStore(s => s.colors);
+  const packaging = useDashboardStore(s => s.packaging);
   const { data: namesQ } = useProductNames();
 
   // Transformed Options
   const namesOpts = toOptions(namesQ?.rows);
-  const brandOpts = toOptions(brandsQ?.rows);
-  const typeOpts = toOptions(typesQ?.rows);
-  const subcategoryOpts = toOptions(subsQ?.rows);
-  const occasionOpts = toOptions(occsQ?.rows);
-  const recipientOpts = toOptions(recsQ?.rows);
-  const colorOpts = toOptions(colsQ?.rows);
-  const packagingOpts = toOptions(packsQ?.rows);
 
-  const brandSelectOpts = transformOptions(brandOpts);
-  const typeSelectOpts = transformOptions(typeOpts);
-  const subcategorySelectOpts = transformOptions(subcategoryOpts);
-  const occasionSelectOpts = transformOptions(occasionOpts);
-  const recipientSelectOpts = transformOptions(recipientOpts);
-  const colorSelectOpts = transformOptions(colorOpts);
-  const packagingSelectOpts = transformOptions(packagingOpts);
+  const brandSelectOpts = transformOptions(brands);
+  const typeSelectOpts = transformOptions(categoryTypes);
+  const categorySelectOpts = transformOptions(categories);
+  const occasionSelectOpts = transformOptions(occasions);
+  const recipientSelectOpts = transformOptions(recipients);
+  const colorSelectOpts = transformOptions(colors);
+  const packagingSelectOpts = transformOptions(packaging);
   const namesSelectOpts = transformOptions(namesOpts);
 
   /* hydrate edit */
@@ -509,11 +496,6 @@ export default function AddOrEditProduct() {
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                {isEdit ? 'Edit Product' : 'Create Product'}
-              </h1>
-            </div>
           </div>
           <div className="flex items-center gap-3">
              <Button 
@@ -804,7 +786,7 @@ export default function AddOrEditProduct() {
                      <div className="space-y-2">
                         <Label>Categories *</Label>
                         <MultiSelect 
-                            options={subcategorySelectOpts}
+                            options={categorySelectOpts}
                             selected={form.categories}
                             onChange={(val) => setField('categories', val)}
                             placeholder="Select Categories"

@@ -4,6 +4,7 @@ import {
   updateColors as updateColorApi,
   deleteColor as deleteColorApi,
 } from "../../api/colors";
+import { useDashboardStore } from '../../store/useDashboardStore';
 
 interface Color {
   id?: string;
@@ -31,6 +32,7 @@ export function useAddColor() {
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["colors"] });
+      useDashboardStore.getState().refresh();
     },
     retry: 0,
   });
@@ -54,6 +56,7 @@ export function useUpdateColor() {
     onSettled: (_res: any, _err: any, { id }: { id: string }) => {
       qc.invalidateQueries({ queryKey: ["colors"] });
       qc.invalidateQueries({ queryKey: ["color", id] });
+      useDashboardStore.getState().refresh();
     },
     retry: 0,
   });
@@ -78,6 +81,7 @@ export function useDeleteColor() {
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["colors"] });
+      useDashboardStore.getState().refresh();
     },
     retry: 0,
   });

@@ -15,7 +15,7 @@ import {
   Package
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { ParticleTextEffect } from "@/components/ParticleTextEffect";
+import { useDashboardStore } from '../../../store/useDashboardStore';
 
 import {
   Table,
@@ -71,10 +71,7 @@ export default function CategoriesTable() {
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [categoryToDelete, setCategoryToDelete] = React.useState<Category | null>(null);
 
-  const { data: categories, isLoading } = useCategories({
-    q: search,
-    status: status === 'all' ? undefined : status
-  });
+  const categories = useDashboardStore(s => s.categories);
   const delMutation = useDeleteCategory();
 
   const handleDelete = async () => {
@@ -91,11 +88,7 @@ export default function CategoriesTable() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="w-full flex justify-center mb-[-20px]">
-          <ParticleTextEffect words={["Categories"]} />
-      </div>
-
+    <div className="space-y-6">
       <Card className="border-none shadow-md bg-white overflow-hidden">
         <CardHeader className="p-6 border-b bg-neutral-50/50">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -142,15 +135,7 @@ export default function CategoriesTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    {Array.from({ length: 6 }).map((_, j) => (
-                      <TableCell key={j} className="py-8"><div className="h-4 bg-neutral-100 animate-pulse rounded" /></TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : categories?.rows?.length === 0 ? (
+              {categories.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="h-64 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-neutral-400">
@@ -160,7 +145,7 @@ export default function CategoriesTable() {
                   </TableCell>
                 </TableRow>
               ) : (
-                categories?.rows?.map((category: Category) => (
+                categories.map((category: Category) => (
                   <TableRow key={category.id} className="hover:bg-neutral-50/50 transition-colors border-neutral-100 group">
                     <TableCell className="pl-6 py-4">
                       <div className="h-14 w-14 rounded-xl overflow-hidden border border-neutral-100 shadow-sm bg-neutral-100 flex items-center justify-center">

@@ -39,7 +39,6 @@ export default function ViewOrderDetail() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Orders
         </Button>
-        <h1 className="text-2xl font-bold">Order #{order.code || order._id}</h1>
         {getStatusBadge(order.status)}
       </div>
 

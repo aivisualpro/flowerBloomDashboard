@@ -14,7 +14,6 @@ import {
   ShoppingCart
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { ParticleTextEffect } from "@/components/ParticleTextEffect";
 
 import {
   Table,
@@ -43,7 +42,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-import { useOrders } from '../../../hooks/orders/useOrders';
+import { useDashboardStore } from '../../../store/useDashboardStore';
 
 interface Order {
   id: string;
@@ -67,10 +66,14 @@ export default function OrdersTable() {
   const [search, setSearch] = React.useState('');
   const [status, setStatus] = React.useState('all');
 
-  const { data: orders, isLoading } = useOrders({
-    q: search,
-    status: status === 'all' ? undefined : status
-  });
+  const allOrders = useDashboardStore(s => s.orders);
+  const ordersRows = React.useMemo(() => {
+    return allOrders.filter(o => {
+      const matchSearch = String(o.code || '').toLowerCase().includes(search.toLowerCase()) || String(o.user || '').toLowerCase().includes(search.toLowerCase());
+      const matchStatus = status === 'all' ? true : o.status === status;
+      return matchSearch && matchStatus;
+    });
+  }, [allOrders, search, status]);
 
   const getStatusBadge = (status: string) => {
     const s = String(status || '').toLowerCase();
@@ -87,11 +90,7 @@ export default function OrdersTable() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="w-full flex justify-center mb-[-20px]">
-          <ParticleTextEffect words={["Orders"]} />
-      </div>
-
+    <div className="space-y-6">
       <Card className="border-none shadow-md bg-white overflow-hidden">
         <CardHeader className="p-6 border-b bg-neutral-50/50">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -139,15 +138,7 @@ export default function OrdersTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    {Array.from({ length: 8 }).map((_, j) => (
-                      <TableCell key={j} className="py-8"><div className="h-4 bg-neutral-100 animate-pulse rounded" /></TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : orders?.rows?.length === 0 ? (
+              {ordersRows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="h-64 text-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-neutral-400">
@@ -157,8 +148,8 @@ export default function OrdersTable() {
                   </TableCell>
                 </TableRow>
               ) : (
-                orders?.rows?.map((order: Order) => (
-                  <TableRow key={order.id} className="hover:bg-neutral-50/50 transition-colors border-neutral-100 group">
+                ordersRows.map((order: Order) => (
+                  <TableRow key={order.id || (order as any)._id} className="hover:bg-neutral-50/50 transition-colors border-neutral-100 group">
                     <TableCell className="pl-6 py-4 font-mono text-neutral-600">{order.code}</TableCell>
                     <TableCell className="font-semibold text-neutral-800">{order.user}</TableCell>
                     <TableCell className="text-neutral-600">{order.totalItems}</TableCell>

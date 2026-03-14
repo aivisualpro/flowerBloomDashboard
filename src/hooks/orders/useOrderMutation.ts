@@ -1,6 +1,7 @@
 // src/hooks/orders/useOrderMutation.js
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createOrder, deleteOrder, updateOrder } from '../../api/orders';
+import { useDashboardStore } from '../../store/useDashboardStore';
 
 export function useAddOrder() {
   const qc = useQueryClient();
@@ -10,6 +11,7 @@ export function useAddOrder() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['orders'], exact: false });
       qc.invalidateQueries({ queryKey: ['order-detail'], exact: false });
+      useDashboardStore.getState().refresh();
     },
   });
 }
@@ -61,6 +63,7 @@ export function useUpdateOrder() {
       // refetch all orders & any order-detail
       qc.invalidateQueries({ queryKey: ['orders'], exact: false });
       qc.invalidateQueries({ queryKey: ['order-detail'], exact: false });
+      useDashboardStore.getState().refresh();
     },
   });
 }
@@ -87,6 +90,7 @@ export function useDeleteOrder() {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['orders'], exact: false });
       qc.invalidateQueries({ queryKey: ['order-detail'], exact: false });
+      useDashboardStore.getState().refresh();
     },
   });
 }

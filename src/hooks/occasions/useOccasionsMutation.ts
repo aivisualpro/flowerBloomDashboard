@@ -1,6 +1,7 @@
 // hooks/brands/useBrandsMutation.js
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createOccasion, deleteOccasion, updateOccasion } from '../../api/occasions';
+import { useDashboardStore } from '../../store/useDashboardStore';
 
 export function useAddOccasion() {
   const qc = useQueryClient();
@@ -9,6 +10,7 @@ export function useAddOccasion() {
     retry: 0,                      // ⬅️ important
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['occasions', 'occasion'] });
+      useDashboardStore.getState().refresh();
     },
   });
 }
@@ -20,6 +22,7 @@ export function useUpdateOccasion() {
     retry: 0,                      // ⬅️ important
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['occasions', 'occasion'] });
+      useDashboardStore.getState().refresh();
     },
   });
 }
@@ -50,6 +53,7 @@ export function useDeleteOccasion() {
 
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["occasions"] });
+      useDashboardStore.getState().refresh();
     },
   });
 }

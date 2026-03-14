@@ -13,10 +13,10 @@ import ViewCategoryType from '../views/ui-elements/categoriesType/ViewCategoryTy
 import AddOrEditCategoryType from '../views/ui-elements/categoriesType/AddorEditCategoryType';
 import ViewSubCategories from '../views/ui-elements/sub categories/ViewSubCategories';
 import AddOrEditSubCategories from '../views/ui-elements/sub categories/AddOrEditSubCategories';
-import ViewOccasion from '../views/ui-elements/occasions/ViewOccasion';
-import AddOrEditOccasion from '../views/ui-elements/occasions/AddOrEditOccasion';
+import ViewOccasion from '../views/ui-elements/occasions/ViewOccasions';
+import AddOrEditOccasion from '../views/ui-elements/occasions/AddOrEditOccasions';
 import ViewRecipient from '../views/ui-elements/recipients/ViewRecipients';
-import AddOrEditRecipient from '../views/ui-elements/recipients/AddOrEditRecipient';
+import AddOrEditRecipient from '../views/ui-elements/recipients/AddOrEditRecipients';
 import ViewPackaging from '../views/ui-elements/packaging/ViewPackaging';
 import AddOrEditPackaging from '../views/ui-elements/packaging/AddOrEditPackaging';
 import ViewColors from '../views/ui-elements/colors/ViewColors';
@@ -25,6 +25,7 @@ import ViewOrders from '../views/ui-elements/orders/ViewOrders';
 import ViewOrderDetail from '../views/ui-elements/orders/ViewOrderDetail';
 import EditOrder from '../views/ui-elements/orders/EditOrder';
 import ViewCustomers from '../views/ui-elements/customers/ViewCustomers';
+import CustomerDetail from '../views/ui-elements/customers/CustomerDetail';
 import EditCustomer from '../views/ui-elements/customers/EditCustomer';
 
 const DashboardSales = lazy(() => import('../views/dashboard/DashSales/index'));
@@ -184,6 +185,10 @@ const MainRoutes = {
         {
           path: '/customers',
           element: <ViewCustomers />
+        },
+        {
+          path: '/customer-detail/:id',
+          element: <CustomerDetail />
         },
         {
           path: '/customers/edit/:id',

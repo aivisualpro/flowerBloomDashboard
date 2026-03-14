@@ -1,6 +1,7 @@
 // hooks/brands/useBrandsMutation.js
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createProduct, deleteProduct, updateProduct } from '../../api/products';
+import { useDashboardStore } from '../../store/useDashboardStore';
 
 export function useAddProduct() {
   const qc = useQueryClient();
@@ -10,6 +11,7 @@ export function useAddProduct() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['products'] });
       qc.invalidateQueries({ queryKey: ['product'] });
+      useDashboardStore.getState().refresh();
     },
   });
 }
@@ -22,6 +24,7 @@ export function useUpdateProduct() {
     onSuccess: (_data, { id }) => {
       qc.invalidateQueries({ queryKey: ['products'] });
       qc.invalidateQueries({ queryKey: ['product', id] });
+      useDashboardStore.getState().refresh();
     },
   });
 }
@@ -55,6 +58,7 @@ export function useDeleteProduct() {
     // Always refetch after error or success:
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["products"] });
+      useDashboardStore.getState().refresh();
     },
   });
 }

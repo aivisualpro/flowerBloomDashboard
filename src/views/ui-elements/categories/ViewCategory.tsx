@@ -132,10 +132,6 @@ export default function CategoriesTable() {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Categories</h1>
-          <p className="text-neutral-500">Manage your store's primary categories and organization.</p>
-        </div>
         
         <Button onClick={() => router.push('/categories/add')} className="bg-primary hover:bg-primary/90 text-white shadow-md transition-all rounded-xl">
           <Plus className="mr-2 h-4 w-4" /> Add Category

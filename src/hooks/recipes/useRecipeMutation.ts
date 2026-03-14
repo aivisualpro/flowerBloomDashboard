@@ -1,6 +1,7 @@
 // hooks/recipes/useRecipeMutation.ts
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createRecipe, deleteRecipe, updateRecipe } from '../../api/recipes';
+import { useDashboardStore } from '../../store/useDashboardStore';
 
 export function useAddRecipe() {
   const qc = useQueryClient();
@@ -10,6 +11,7 @@ export function useAddRecipe() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['recipes'] });
       qc.invalidateQueries({ queryKey: ['recipe'] });
+      useDashboardStore.getState().refresh();
     },
   });
 }
@@ -22,6 +24,7 @@ export function useUpdateRecipe() {
     onSuccess: (_data, { id }) => {
       qc.invalidateQueries({ queryKey: ['recipes'] });
       qc.invalidateQueries({ queryKey: ['recipe', id] });
+      useDashboardStore.getState().refresh();
     },
   });
 }
@@ -55,6 +58,7 @@ export function useDeleteRecipe() {
     // Always refetch after error or success:
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["recipes"] });
+      useDashboardStore.getState().refresh();
     },
   });
 }

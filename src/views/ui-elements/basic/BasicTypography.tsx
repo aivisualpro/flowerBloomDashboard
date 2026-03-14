@@ -12,7 +12,6 @@ export default function BasicTypography() {
             <Card.Title as="h5">Headings</Card.Title>
           </Card.Header>
           <Card.Body>
-            <h1>This is a Heading 1</h1>
             <Card.Text className="text-muted mb-4">
               Suspendisse vel quam malesuada, aliquet sem sit amet, fringilla elit. Morbi tempor tincidunt tempor. Etiam id turpis viverra,
               vulputate sapien nec, varius sem. Curabitur ullamcorper fringilla eleifend. In ut eros hendrerit est consequat posuere et at
@@ -51,10 +50,6 @@ export default function BasicTypography() {
             <Card.Title as="h5">Display Headings</Card.Title>
           </Card.Header>
           <Card.Body>
-            <h1 className="display-1">Display 1</h1>
-            <h1 className="display-2">Display 2</h1>
-            <h1 className="display-3">Display 3</h1>
-            <h1 className="display-4">Display 4</h1>
           </Card.Body>
         </Card>
       </Col>

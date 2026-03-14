@@ -70,3 +70,45 @@
     @apply bg-background text-foreground overflow-hidden;
   }
 }
+
+/* Quill Editor Overrides */
+.ql-container,
+.ql-editor {
+  background: #ffffff !important;
+  color: #1a1a1a !important;
+  font-size: 0.875rem;
+}
+
+/* Force white bg and dark text on ALL nested elements (overrides inline styles from pasted content) */
+.ql-editor *,
+.ql-editor p,
+.ql-editor span,
+.ql-editor div,
+.ql-editor li,
+.ql-editor h1,
+.ql-editor h2,
+.ql-editor h3,
+.ql-editor h4,
+.ql-editor h5,
+.ql-editor h6,
+.ql-editor strong,
+.ql-editor em,
+.ql-editor a {
+  color: #1a1a1a !important;
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+.ql-toolbar {
+  background: #fafafa !important;
+  border-color: #e5e5e5 !important;
+}
+
+.ql-container {
+  border-color: #e5e5e5 !important;
+}
+
+.ql-editor.ql-blank::before {
+  color: #a3a3a3 !important;
+  font-style: italic;
+}

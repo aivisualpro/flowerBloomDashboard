@@ -1,6 +1,7 @@
 // hooks/brands/useBrandsMutation.js
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createRecipient, deleteRecipient, updateRecipient } from '../../api/recipients';
+import { useDashboardStore } from '../../store/useDashboardStore';
 
 export function useAddRecipient() {
   const qc = useQueryClient();
@@ -9,6 +10,7 @@ export function useAddRecipient() {
     retry: 0,                      // ⬅️ important
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['recipients', 'recipient'] });
+      useDashboardStore.getState().refresh();
     },
   });
 }
@@ -20,6 +22,7 @@ export function useUpdateRecipient() {
     retry: 0,                      // ⬅️ important
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['recipients', 'recipient'] });
+      useDashboardStore.getState().refresh();
     },
   });
 }
@@ -50,6 +53,7 @@ export function useDeleteRecipient() {
 
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["recipients"] });
+      useDashboardStore.getState().refresh();
     },
   });
 }

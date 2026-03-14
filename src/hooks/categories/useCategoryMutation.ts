@@ -1,6 +1,7 @@
 // src/hooks/categories/useCategoryMutation.ts
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createCategory, updateCategory, deleteCategory } from "../../api/categories";
+import { useDashboardStore } from '../../store/useDashboardStore';
 
 const categoriesKey = (params: any = {}) => ["categories", params];
 
@@ -10,6 +11,7 @@ export function useAddCategory(params = {}) {
     mutationFn: (formData: FormData) => createCategory(formData),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: categoriesKey(params) });
+      useDashboardStore.getState().refresh();
     },
   });
 }
@@ -26,6 +28,7 @@ export function useUpdateCategory() {
     onSuccess: (_data, { id }) => {
       qc.invalidateQueries({ queryKey: categoriesKey() });
       qc.invalidateQueries({ queryKey: ["category", id] });
+      useDashboardStore.getState().refresh();
     },
   });
 }
@@ -35,6 +38,9 @@ export function useDeleteCategory(params = {}) {
   return useMutation({
     // id is passed when calling mutate/mutateAsync
     mutationFn: (id: string) => deleteCategory(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: categoriesKey(params) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: categoriesKey(params) });
+      useDashboardStore.getState().refresh();
+    },
   });
 }

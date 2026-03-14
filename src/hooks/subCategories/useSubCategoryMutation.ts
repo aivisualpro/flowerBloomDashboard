@@ -1,6 +1,7 @@
 // src/hooks/subCategories/useSubCategoryMutation.ts
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createSubCategory, updateSubCategory, deleteSubCategory } from "../../api/subCategories";
+import { useDashboardStore } from '../../store/useDashboardStore';
 
 const categoriesKey = (params = {}) => ["subCategories", params];
 
@@ -10,6 +11,7 @@ export function useAddSubCategory(params = {}) {
     mutationFn: (formData: any) => createSubCategory(formData),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: categoriesKey(params) });
+      useDashboardStore.getState().refresh();
     },
   });
 }
@@ -21,6 +23,7 @@ export function useUpdateSubCategory(params = {}) {
     onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: categoriesKey(params) });
       qc.invalidateQueries({ queryKey: ["subCategory", variables.id] });
+      useDashboardStore.getState().refresh();
     },
   });
 }
@@ -30,6 +33,9 @@ export function useDeleteSubCategory(params = {}) {
   return useMutation<string, Error, string>({
     // id is passed when calling mutate/mutateAsync
     mutationFn: (id: string) => deleteSubCategory(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: categoriesKey(params) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: categoriesKey(params) });
+      useDashboardStore.getState().refresh();
+    },
   });
 }

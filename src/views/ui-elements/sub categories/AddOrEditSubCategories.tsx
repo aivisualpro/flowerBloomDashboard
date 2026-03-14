@@ -157,11 +157,6 @@ export default function AddOrEditSubCategories() {
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                {isEdit ? 'Edit Sub Category' : 'Create Sub Category'}
-              </h1>
-            </div>
           </div>
           <div className="flex items-center gap-3">
              <Button

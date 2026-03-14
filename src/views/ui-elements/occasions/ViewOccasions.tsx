@@ -16,7 +16,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { ParticleTextEffect } from "@/components/ParticleTextEffect";
+import { useDashboardStore } from '../../../store/useDashboardStore';
 
 import {
   Table,
@@ -99,10 +99,7 @@ export default function OccasionsTable() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="w-full flex justify-center mb-[-20px]">
-          <ParticleTextEffect words={["Special", "Occasions"]} />
-      </div>
+    <div className="space-y-6">
 
       <Card className="border-none shadow-md bg-white overflow-hidden">
         <CardHeader className="p-6 border-b bg-neutral-50/50">

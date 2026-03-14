@@ -136,11 +136,6 @@ export default function AddOrEditPackaging() {
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                {isEdit ? 'Edit Packaging' : 'Create Packaging'}
-              </h1>
-            </div>
           </div>
           <div className="flex items-center gap-3">
              <Button
