@@ -10,6 +10,7 @@ const withPWA = withPWAInit({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false, // Often helps with third-party libs in migration
+  turbopack: {}, // Required for Next.js 16+ when plugins (e.g. next-pwa) inject webpack config
   images: {
     remotePatterns: [
       {
